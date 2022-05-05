@@ -1,5 +1,5 @@
 # Towards Consistent Document-level Entity Linking:Joint Models for Entity Linking and Coreference Resolution
-This repository is a __WORK IN PROGRESS__ and will contain the code, 
+This repository is a __WORK IN PROGRESS__ and contains the code, 
 dataset, and models for the following paper accepted to ACL 2022 (oral presentation): 
 ```
 @article{zaporojets2021towards,
