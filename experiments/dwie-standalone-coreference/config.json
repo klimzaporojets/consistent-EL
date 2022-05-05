@@ -1,0 +1,273 @@
+{
+   "TODO":"don't do random embeddings for unknown words, this makes deployment more complicated",
+   "notes": "file originally obtained from n086-01.wall2.ilabt.iminds.be:/work/gpulab/jdeleu/spirit-nlinker2/models/cpn-20200905/config.json, but modified with local directories and to run faster locally",
+   "dictionaries":{
+      "whitespace":{
+         "type":"json",
+         "filename":"whitespace.json",
+         "update":true
+      },
+      "tags":{
+         "type":"json",
+         "filename":"tags.json",
+         "update":true
+      },
+      "entities":{
+         "init":{
+            "filename":"links_dictionary.json",
+            "type":"json"
+         },
+         "append":["###UNKNOWN###"],
+         "update":true
+      },
+      "bert_subtokens":{
+         "init":{
+            "type":"bert",
+            "filename":"bert-base-cased"
+         }
+      },
+      "relations":{
+         "type":"json",
+         "filename":"relations.json",
+         "update":true
+      }
+   },
+   "output_config":{
+	  "output_content":false,
+	  "output_tokens":false
+   },
+   "model":{
+      "name":"coreflinker_spanbert_hoi",
+      "debug":true,
+      "_lexical_dropout":0.0,
+      "random_embed_dim":0,
+      "rel_after_coref":true,
+      "end_to_end_mentions":true,
+      "_end_to_end_mentions":"If it is in false, then it is not end-to-end and gold spans will be fed in, and the modules such as coref and linker will get as input gold spans instead of using the spans from the pruner.",
+      "__spans_single_sentence":false,
+      "spans_single_sentence":false,
+      "_spans_single_sentence":"Whether the candidate spans have to come from a single sentence. Potentially can be problematic for mentions wrongly tokenized such as U.S.",
+      "use_all_subtoken_spans":false,
+      "_use_all_subtoken_spans":"Whether to use all subtoken spans or already pre-filtered bert subtokens so that each one already corresponds to the first or last part of actual words.",
+      "pruner":{
+         "weight":1.0,
+         "_hidden_dim":150,
+         "hidden_dim": 300,
+         "ffnn_depth": 2,
+         "hidden_dropout":0.3,
+         "prune_ratio":0.2,
+         "sort_after_pruning":true,
+         "add_pruner_loss": true,
+         "no_cross_overlap": true,
+         "_no_cross_overlap": "whether should filter out overlapping spans",
+         "use_width_prior": true,
+         "_use_width_prior": "whether the width embedding has to be additionally used",
+         "max_num_extracted_spans": 3000,
+         "debug_stats": true
+      },
+      "text_embedder":{
+         "spanbert_embedder_x":{
+            "model_path":"embeddings/token_embeddings/spanbert/spanbert_hf_base",
+            "fine_tune_bert":true
+         }
+      },
+
+
+      "max_span_length":15,
+
+      "span-extractor":{
+         "type":"endpoint",
+         "span_embed":20,
+         "dropout": 0.3,
+         "average":false,
+         "max_span_length":15,
+         "param":"span_extractor.embed.weight",
+         "attention_heads":true
+      },
+      "span-pairs":{
+         "span_product":true,
+         "num_distance_buckets":10,
+         "dim_distance_embedding":20,
+         "distance_function":"ordering",
+         "init_embeddings_std": 0.02
+      },
+
+      "spanprop":{
+         "type":"attprop",
+         "att_prop":0,
+         "hidden_dim":300,
+         "hidden_dropout":0.3,
+         "scorer_type": "opt-ff-pairs",
+         "init_weights_std": 0.02,
+         "components_ffnn_depth": 0,
+         "scorers_ffnn_depth": 2
+      },
+      "relprop":{
+         "type":"none"
+      },
+
+      "ner":{
+         "type":"span-1",
+         "weight":1.0,
+         "enabled":false,
+         "dictionary":"tags-y",
+         "network":{
+            "type":"ffnn",
+            "dims":[150,150],
+            "dp_in":0.0,
+            "dp_h":0.3,
+            "actfnc":"relu",
+            "param":"ner_task.net.layers.{0}",
+            "layer_offset":1
+         },
+         "divide_by_number_of_labels":false,
+         "add_pruner_scores":false,
+         "add_pruner_loss":false,
+         "mask_target":false
+      },
+      "coref":{
+         "enabled":true,
+         "weight":1.0,
+         "bidirectional":false,
+         "filter_singletons_with_pruner":true,
+         "filter_singletons_with_ner":false,
+	     "singletons":true,
+         "_singletons":"needed if end_to_end is in false, but we still want to get singletons",
+       	 "corefprop": {
+         	"type": "ff_pairs",
+            "use_distance_prior": true,
+            "num_distance_buckets": 10,
+	        "coref_prop": 0,
+         	"hidden_dim": 300,
+         	"hidden_dropout": 0.3,
+         	"update_coref_scores": true,
+            "init_weights_std": 0.02,
+            "components_ffnn_depth": 0,
+            "scorers_ffnn_depth": 2
+       	  }
+      },
+      "relations":{
+         "type":"binary-x",
+         "weight":10.0,
+         "normalize":false,
+         "enabled":false,
+         "debug":false,
+         "mentionwise":false
+      },
+      "linker":{
+         "enabled":false,
+         "weight":1.0,
+         "hidden_dim":300,
+         "hidden_dropout":0.3,
+         "scorers_ffnn_depth":2,
+         "init_weights_std": 0.02,
+	     "doc_level_candidates":false,
+	     "source":"pruned",
+         "entity_embedder":{
+            "dict":"entities",
+            "type": "yamada-johannes",
+            "embed_file":"embeddings/entity_embeddings/yamada/enwiki_200.txt.gz",
+            "filtered_file":"embeddings/entity_embeddings/yamada/enwiki_200_filtered_dwie_e2e.txt",
+            "use_filtered":true,
+            "_embed_file":"embeddings/entity_embeddings/yamada/enwiki_200.filtered_dwie.txt.gz",
+            "load_type":"ent_wordentvec",
+            "_load_type":"Indicates the loading type, for example 'wordvec' just loads normally the token embedding file such as glove.6B.100d.txt.gz ; 'word_wordentvec' on the other hand is used to load the word embeddings from the file that contains both word and entity embeddings such as enwiki_200.txt.; 'ent_wordentvec' does the opposite: loads the entities from the file that contains both word and entity embeddings.",
+            "what_load":"dictionary",
+            "_what_load":"If in 'allvecs', then loads all the vectors from the embeddings file, if 'dictionary' only loads the vectors that are present in the dictionary (for a particular dataset we are training on). In order to evaluate on third party datasets/to put as a service, it has to be configured in 'allvecs' then. When in True, also adds the entries into the dictionary.",
+            "dim":200,
+            "dropout":0.0,
+            "freeze":true,
+            "init_unknown":false,
+            "init_random":true,
+            "backoff_to_lowercase":false
+         }
+      }
+   },
+   "optimizer":{
+      "optimizer":"adam",
+      "_iters":100,
+      "iters":50,
+      "batch_size":1,
+      "write-last-model":true,
+      "write-iter-model":false,
+      "_regularization":{
+         "linker_task.layers.0.weight":1e-6
+      },
+      "_initializer":{
+      },
+      "clip-norm":10.0,
+      "_clip-norm":1.0,
+      "model":"last.model",
+      "report_frequency":702,
+      "adam_eps":1e-6, 
+      "adam_weight_decay":1e-2,
+      "warmup_ratio":0.1,
+      "gradient_accumulation_steps":1
+   },
+   "lr-scheduler":{
+      "nr_iters_bert_training": -1,
+      "_nr_iters_bert_training": "the number of training instances after which bert freezes and stops being trained. For DWIE 1 epoch = 702 instances.",
+      "task_start_epoch":0,
+      "_task_start_epoch": "When (epoch) the lr changing from task_learning_rate_start to task_learning_rate_end begins.",
+      "task_end_epoch":50,
+      "_task_end_epoch": "When (epoch) the lr changing from task_learning_rate_start to task_learning_rate_end ends.",
+      "bert_start_epoch": 0,
+      "_bert_start_epoch": "When (epoch) the lr changing from bert_learning_rate_start to bert_learning_rate_end begins (first bert_warmup_ratio will be applied).",
+      "bert_end_epoch": 50,
+      "_bert_end_epoch": "When (epoch) the lr changing from bert_learning_rate_start to bert_learning_rate_end ends.",
+      "bert_warmup_ratio":0.1,
+      "task_learning_rate_start":1e-3,
+      "task_learning_rate_end":1e-4,
+      "bert_learning_rate_start":2e-5,
+      "bert_learning_rate_end":0.0
+   },
+   "dataloader":{
+      "_type":"dwie_spanbert",
+      "type":"dwie_spanbert_hoi",
+      "include_nill_in_candidates":true,
+      "include_none_in_candidates":false, 
+      "doc_level_candidates":false, 
+      "all_spans_candidates":true,
+      "candidates_from_dictionary":true,
+      "bert_max_segment_len":384,
+      "transformers-x":[]
+   },
+   "datasets":{
+      "train":{
+         "filename":"data/data-20200921-bert/dwie_bert_s384/",
+         "tokenize":false,
+         "shuffle_candidates":true,
+         "_shuffle_candidates":"originally in true, trying in false to see how the code behaves",
+         "load-in-memory":true,
+         "tag":"train",
+         "train_linker_tag":"all"
+      },
+      "test":{
+         "filename":"data/data-20200921-bert/dwie_bert_s384/",
+         "tokenize":false,
+         "shuffle_candidates":true,
+         "_shuffle_candidates":"originally in true, trying in false to see how the code behaves",
+         "load-in-memory":true,
+         "tag":"test",
+         "train_linker_tag":"all"
+      }
+   },
+   "trainer":{
+     "train":"train",
+     "_train":"cv-train",
+     "version":"spanbert", 
+     "_version":"old_dwie", 
+     "__version":"The version of the trainer, the 'old_dwie' is the traditional one implemented in traintool.train ; the 'spanbert' is based on some ideas from the code in https://github.com/lxucs/coref-hoi related to different schedulers, optimizers, grad accumulations, etc. ",      
+     "evaluate":["test","train"],
+     "evaluation_frequency":{
+       "train":-1,
+       "test":5
+     },
+     "loss_frequency":{
+       "train":-1,
+       "test":-1
+     },
+     "_evaluate":"Originally had 'cv-test' and 'test', have put only 'test' to make the debugging simpler",
+     "write-predictions":true
+   }
+}
