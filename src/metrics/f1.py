@@ -1,6 +1,11 @@
-import torch
+import logging
 
 import numpy as np
+import torch
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+logger = logging.getLogger()
 
 
 def decode_multiner(targets, sequence_lengths, labels):
@@ -62,11 +67,12 @@ class MetricF1:
             re = tp / (tp + fn) if tp != 0 else 0.0
             f1 = 2 * tp / (2 * tp + fp + fn) if tp != 0 else 0.0
             if details:
-                print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format(label, tp, fp, fn, pr, re, f1))
+                logger.debug(
+                    '{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format(label, tp, fp, fn, pr, re, f1))
 
-        print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format('', self.total_tp, self.total_fp,
-                                                                              self.total_fn, self.pr(), self.re(),
-                                                                              self.f1()))
+        logger.info('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format('', self.total_tp, self.total_fp,
+                                                                                    self.total_fn, self.pr(), self.re(),
+                                                                                    self.f1()))
 
     def pr(self):
         return self.total_tp / (self.total_tp + self.total_fp) if self.total_tp != 0 else 0.0
@@ -78,42 +84,43 @@ class MetricF1:
         return 2 * self.total_tp / (2 * self.total_tp + self.total_fp + self.total_fn) if self.total_tp != 0 else 0.0
 
 
-#
-# def decode_segments(targets, sequence_lengths, labels):
-#     if isinstance(targets, (list,)):
-#         indices = targets
-#     else:
-#         indices = []
-#         for length, data in zip(sequence_lengths.tolist(), targets.tolist()):
-#             indices.append(data[:length])
-#
-#     outputs = []
-#     for lst in indices:
-#         data = [labels[x] for x in lst]
-#
-#         output = []
-#         start = -1
-#         type = None
-#         for pos, target in enumerate(data):
-#             if target.startswith('B-'):
-#                 if start >= 0:
-#                     output.append((start, pos, type))
-#                 start = pos
-#                 type = target[2:]
-#             elif target == 'O':
-#                 if start >= 0:
-#                     output.append((start, pos, type))
-#                     start = -1
-#                     type = None
-#
-#         if start >= 0:
-#             output.append((start, len(data), type))
-#         outputs.append(output)
-#     return outputs
-#
-#
 def decision_function_softmax(logits, sequence_lengths, mask):
     return torch.max(logits, 2)[1]
+
+
+#
+
+def decode_segments(targets, sequence_lengths, labels):
+    if isinstance(targets, (list,)):
+        indices = targets
+    else:
+        indices = []
+        for length, data in zip(sequence_lengths.tolist(), targets.tolist()):
+            indices.append(data[:length])
+
+    outputs = []
+    for lst in indices:
+        data = [labels[x] for x in lst]
+
+        output = []
+        start = -1
+        type = None
+        for pos, target in enumerate(data):
+            if target.startswith('B-'):
+                if start >= 0:
+                    output.append((start, pos, type))
+                start = pos
+                type = target[2:]
+            elif target == 'O':
+                if start >= 0:
+                    output.append((start, pos, type))
+                    start = -1
+                    type = None
+
+        if start >= 0:
+            output.append((start, len(data), type))
+        outputs.append(output)
+    return outputs
 
 
 class MetricNERF1:
@@ -150,12 +157,8 @@ class MetricNERF1:
         stall = self.epoch - self.max_iter
 
         self.evaluator.print(self.verbose)
-        print("EVAL-NER\t{}-{}\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}".format(dataset_name,
-                                                                                                        self.task,
-                                                                                                        self.epoch, f1,
-                                                                                                        self.max_iter,
-                                                                                                        self.max_f1,
-                                                                                                        stall))
+        logger.info('EVAL-NER\t{}-{}\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}'
+                    .format(dataset_name, self.task, self.epoch, f1, self.max_iter, self.max_f1, stall))
 
     def log(self, tb_logger, dataset_name):
         tb_logger.log_value('{}-{}/f1'.format(dataset_name, self.task), self.evaluator.f1(), self.epoch)
@@ -179,8 +182,6 @@ class MetricMultiNERF1:
         sequence_lengths, mask = args['sequence_lengths'], args['mask']
         p = decode_multiner(logits, sequence_lengths, self.bi_labels)
         g = decode_multiner(targets, sequence_lengths, self.bi_labels)
-        # print(p)
-        # print(g)
         self.evaluator.update(p, g)
 
     def update2(self, args, metadata={}):
@@ -195,12 +196,8 @@ class MetricMultiNERF1:
         stall = self.epoch - self.max_iter
 
         self.evaluator.print(details)
-        print("EVAL-NER\t{}-{}\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}".format(dataset_name,
-                                                                                                        self.task,
-                                                                                                        self.epoch, f1,
-                                                                                                        self.max_iter,
-                                                                                                        self.max_f1,
-                                                                                                        stall))
+        logger.info('EVAL-NER\t{}-{}\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}'
+                    .format(dataset_name, self.task, self.epoch, f1, self.max_iter, self.max_f1, stall))
 
     def log(self, tb_logger, dataset_name):
         tb_logger.log_value('{}/{}-f1'.format(dataset_name, self.task), self.evaluator.f1(), self.epoch)
@@ -233,16 +230,14 @@ class MetricRelationF1:
 
     def update(self, logits, targets, args, metadata={}):
         if logits.size() != targets.size():
-            raise BaseException("invalid dims", logits.size(), targets.size())
+            raise BaseException('invalid dims %s %s' % (logits.size(), targets.size()))
         concept_lengths = args['concept_lengths']
         p = decode_relations(logits, concept_lengths, self.labels)
         g = decode_relations(targets, concept_lengths, self.labels)
-        # print('pred:', p)
-        # print('gold:', g)
         self.evaluator.update(p, g)
 
     def update2(self, args, metadata={}):
-        print("TODO")
+        logger.warning('TODO')
 
     def print(self, dataset_name, details=False):
         f1 = self.evaluator.f1()
@@ -253,7 +248,7 @@ class MetricRelationF1:
         stall = self.iter - self.max_iter
 
         self.evaluator.print(details)
-        print("EVAL-REL\tdataset: {}\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}".format(
+        logger.info('EVAL-REL\tdataset: {}\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}'.format(
             dataset_name, self.iter, f1, self.max_iter, self.max_f1, stall))
 
     def log(self, tb_logger, dataset_name):
@@ -297,13 +292,8 @@ class MetricSpanNER:
 
         self.evaluator.print(self.verbose)
 
-        print("EVAL-NER\t{}-{}\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}".format(dataset_name,
-                                                                                                        self.task,
-                                                                                                        self.iter, f1,
-                                                                                                        self.max_iter,
-                                                                                                        self.max_f1,
-                                                                                                        stall))
+        logger.info('EVAL-NER\t{}-{}\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}'
+                    .format(dataset_name, self.task, self.iter, f1, self.max_iter, self.max_f1, stall))
 
     def log(self, tb_logger, dataset_name):
-        # tb_logger.log_value('{}/f1'.format(dataset_name), self.evaluator.f1(), self.iter)
         tb_logger.log_value('metrics/f1', self.evaluator.f1(), self.iter)

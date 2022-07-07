@@ -1,0 +1,10 @@
+data/aida+
+data/spanbert_s384
+data/
+.idea/
+**/__pycache__/
+experiments/**/predictions/
+experiments/**/output_train.log
+experiments/**/commit_info.json
+/results/
+deleteme_old_configs_experiments/

@@ -5,9 +5,9 @@ import torch
 # the goal of this module is to add a bunch of tests with asserts in order to check that the decoding process is
 # performed correctly. The most critical part of code that I think can potentially have bugs is
 # modules.tasks.linkercoref.LossLinkerCoref#forward, which is going to be tested in this module.
-import settings
-from datass.dictionary import Dictionary
-from modules.tasks.coreflinker import CorefLinkerLoss
+from misc import settings
+from data_processing.dictionary import Dictionary
+from models.models.coreflinker_loss import CorefLinkerLoss
 
 
 class DwieLinkerCorefTest(unittest.TestCase):

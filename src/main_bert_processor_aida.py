@@ -1,4 +1,4 @@
-# the (original) goal of this class is to use the outpuut from third_party/kolitsas_e2e/prepro_util.py to produce
+# the (original) goal of this class is to use the output from third_party/kolitsas_e2e/prepro_util.py to produce
 # the file that can be used to train the coreflinker (SpanBert version) module (traintool.py).
 # Conceptually, it does more or less the same than main_bert_processor_dwie.py, BUT, instead of producing the
 # candidates (using the candidate list such as cpn-alias-table.json, it already takes as input the aida
@@ -17,11 +17,11 @@ from typing import List, Dict
 import torch
 from transformers import BertTokenizer
 
-from data.dictionary import Dictionary
+from data_processing.bert_preprocessing import normalize_word, flatten
+from data_processing.dictionary import Dictionary
 from main_bert_processor_dwie import JsonBertDocument, get_tokenizer
-from modules.bert_preprocessing import normalize_word, flatten
-from modules.ner.spanner import create_all_spans
-from modules.utils.misc import indices_to_spans
+from models.misc.spanner import create_all_spans
+from models.utils.misc import indices_to_spans
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
@@ -71,8 +71,7 @@ def from_kolitsas_to_aida_plain_dwie_path(filename: str, docid: str):
         ret_id = 'train/{}.json'.format(dc_id)
     else:
         raise RuntimeError('Unknown filename in from_kolitsas_to_aida_path: ', filename)
-    # to_ret_id = '{}.json'.format(ret_id)
-    # return to_ret_id
+
     return ret_id
 
 
@@ -145,7 +144,6 @@ class BertAidaProcessor(object):
         assert len(flatten(bert_doc.segments)) == max(map_subtoks_to_segmented_subtoks.values()) + 2
         return map_subtoks_to_segmented_subtoks
 
-    # def get_linker_candidates_all_spans(self, input_content, all_spans, begin, end, span_mask):
     def get_linker_candidates_all_spans(self, all_spans, begin, end, json_cand_doc, tokens):
 
         span_to_candidates = dict()
@@ -156,22 +154,18 @@ class BertAidaProcessor(object):
                                                                                  json_cand_doc['spans']):
             span_to_candidates[(span_begin, span_end)] = dict()
             if len(candidates) != len(set(candidates)):
-                # logger.warning('Duplicate candidates detected in: ' + str(candidates))
                 # removes the duplicates, starting from the back (the ones with lower candidate score
                 new_candidates = list()
                 new_candidate_scores = list()
-                new_span_text = list()
                 candidates_added = set()
                 for curr_candidate, curr_cand_score in zip(candidates, candidate_scores):
                     if curr_candidate not in candidates_added:
                         new_candidates.append(curr_candidate)
                         new_candidate_scores.append(curr_cand_score)
-                        # new_span_text.append(curr_span_text)
 
                         candidates_added.add(curr_candidate)
                 candidates = new_candidates
                 candidate_scores = new_candidate_scores
-                # span_text = new_span_text
 
             span_to_candidates[(span_begin, span_end)]['candidates'] = candidates
             span_to_candidates[(span_begin, span_end)]['scores'] = candidate_scores
@@ -183,29 +177,12 @@ class BertAidaProcessor(object):
 
             span_candidates = []
             span_scores = []
-            # TODO!!! - check if this +1 is necessary in downstream tasks!!!
             if (curr_span[0], curr_span[1] + 1) in span_to_candidates:
                 curr_cand_data = span_to_candidates[(curr_span[0], curr_span[1] + 1)]
-                # TODO code for debugging purposes, please delete later!!!
-                # for cand in curr_cand_data['candidates']:
-                #     if 'Andromeda' in cand and 'Milky_Way_collision' in cand:
-                #         nc = bytes(cand, "utf-8").decode("unicode_escape")
-                # print('DEBUG: check this out ', cand)
-                # end TODO code for debugging purposes, please delete later!!!
-                # correct_link = bytes(correct_link, "utf-8").decode("unicode_escape")
-
-                # span_candidates = [self.links_dictionary.add(
-                #     # cnd
-                #     # I think this univode unescaping is not necessary here, but just in case adding
-                #     # bytes(cnd, "utf-8").decode("unicode_escape")
-                #     cnd.encode('ascii', 'backslashreplace').decode('unicode-escape')
-                # ) for cnd in curr_cand_data['candidates']]
                 span_candidates = []
 
                 for cnd in curr_cand_data['candidates']:
                     decoded_candidate = cnd.encode('ascii', 'backslashreplace').decode('unicode-escape')
-                    # if 'ul_Piatra_Neam' in decoded_candidate:
-                    #     print('hard case , debug!!')
                     if decoded_candidate in self.hard_encoding_cases:
                         decoded_candidate = self.hard_encoding_cases[decoded_candidate]
                     dict_added = self.links_dictionary.add(decoded_candidate)
@@ -220,9 +197,6 @@ class BertAidaProcessor(object):
             span_candidates.append(self.links_dictionary.lookup('NILL'))
             span_scores.append(1.0)
 
-            # span_candidates.append(self.links_dictionary.lookup('NONE'))
-            # span_scores.append(1.0)
-
             candidates.append(span_candidates)
             candidates_scores.append(span_scores)
 
@@ -233,8 +207,6 @@ class BertAidaProcessor(object):
         """
         span_to_gold = dict()
         for mention in data['mentions']:
-            # if is_link_trainable(mention):
-            # entity_concept = data['concepts'][mention['concept']['concept']]
             entity_concept = data['concepts'][mention['concept']]
             if 'link' in entity_concept:
                 mention_correct = entity_concept['link']
@@ -244,23 +216,12 @@ class BertAidaProcessor(object):
         targets = []
         for span_idx, curr_span in enumerate(all_spans):
             if curr_span not in span_to_gold:
-                # correct_link = 'NONE'
-                # (16/04/2021) after talk with Johannes, the correct is NILL here.
                 correct_link = 'NILL'
             else:
                 correct_link = span_to_gold[curr_span]
 
-            # TODO code for debugging purposes, please delete later!!!
-            # if 'Andromeda' in correct_link and 'Milky_Way_collision' in correct_link:
-            #     correct_link = bytes(correct_link, "utf-8").decode("unicode_escape")
-            # correct_link = correct_link.encode('ascii', 'backslashreplace').decode('unicode-escape')
-            # print('DEBUG: check this out ', correct_link)
-            # end TODO code for debugging purposes, please delete later!!!
-
             # the TARGET links sometimes come with escaped characters,
             correct_link = correct_link.encode('ascii', 'backslashreplace').decode('unicode-escape')
-            # if 'ul_Piatra_Neam' in correct_link:
-            #     print('hard case, debug!')
             if correct_link in self.hard_encoding_cases:
                 correct_link = self.hard_encoding_cases[correct_link]
 
@@ -302,11 +263,9 @@ class BertAidaProcessor(object):
             bert_doc.token_end += [False] * (len(subtokens) - 1) + [True]
             for idx_subtoken, subtoken in enumerate(subtokens):
                 bert_doc.subtokens.append(subtoken)
-                # info = None if idx_subtoken != 0 else len(subtokens)
                 if idx_subtoken == 0:
                     word_idx_to_first_subtoken_idx[word_idx] = subtoken_idx
                 word_idx_to_last_subtoken_idx[word_idx] = subtoken_idx
-                # bert_doc.info.append(info)
                 if idx_token >= len(json_doc['tokenization']['tokens']) - 1 and idx_subtoken >= len(subtokens) - 1:
                     # the last subtoken in the document always is the end of sentence by definition
                     bert_doc.sentence_end.append(True)
@@ -366,15 +325,10 @@ class BertAidaProcessor(object):
         # passes the spans from token (word) level to subtoken (bert) level
         l_span_mask = span_masked_scores[0].tolist()
 
-        # logger.info('BEFORE ERROR PROCESSING: ' + json_doc['id'])
         spans_data = []
 
         # Split documents
         map_subtoks_to_segmented_subtoks = self.split_into_segments(bert_doc, bert_doc.sentence_end, bert_doc.token_end)
-
-        # adjusts the position of subtokens of mentions as well as all_possible_spans to account for segments
-        # if the span size has changed (i.e. ["CLS"]/["SEP"] inserted in the middle, then just ignores it
-        #   TODO: check how much ignored there are of this type
 
         for curr_mention in json_doc['mentions']:
             diff_orig = curr_mention['subtoken_end'] - curr_mention['subtoken_begin']
@@ -384,7 +338,6 @@ class BertAidaProcessor(object):
                 curr_mention['subtoken_begin'] = sn_b
                 curr_mention['subtoken_end'] = sn_e
             else:
-                # TODO: SHOULD I IGNORE THIS???
                 logger.warning('THIS CAN BE SERIOUS MENTION NOT IN THE SAME SEGMENT '
                                '(SPLITTED ACROSS DIFFERENT SEGMENTS): ' +
                                str(bert_doc.subtokens[curr_mention['subtoken_begin']:curr_mention['subtoken_end'] + 1]))
@@ -412,15 +365,12 @@ class BertAidaProcessor(object):
                     if subt_t2 - subt_t1 == m_subt_t2 - m_subt_t1:
                         spans_data.append(((m_subt_t1, m_subt_t2), cands, scores_cands))
                     else:
-                        # TODO: SHOULD I IGNORE THIS???
                         spans_data.append(((m_subt_t1, m_subt_t2), cands, scores_cands))
-                        # logger.warning('FOLLOWING SPAN across segments: ' + str(bert_doc.subtokens[subt_t1:subt_t2 + 1]))
 
         all_possible_spans = [(t1, t2) for (t1, t2), _, _ in spans_data]
 
         # has to convert to torch.tensor because it is needed in this format inside get_linker_targets_all_spans
         linker_cands_all_spans = [torch.tensor(l, dtype=torch.int) for (_, _), l, _ in spans_data]
-        # linker_cands_all_spans_scores = [torch.tensor(ls, dtype=torch.float) for (_, _), _, ls in spans_data]
         linker_cands_all_spans_scores = [ls for (_, _), _, ls in spans_data]
         linker_targets_all_spans = self.get_linker_targets_all_spans(json_doc, all_possible_spans,
                                                                      linker_cands_all_spans)
@@ -428,7 +378,6 @@ class BertAidaProcessor(object):
         bert_doc.all_spans = all_possible_spans
 
         bert_doc.all_spans_candidates = [t.tolist() for t in linker_cands_all_spans]
-        # bert_doc.all_spans_candidates_scores = [t.tolist() for t in linker_cands_all_spans_scores]
         bert_doc.all_spans_candidates_scores = linker_cands_all_spans_scores
         bert_doc.all_spans_candidates_targets = linker_targets_all_spans
 
@@ -459,14 +408,6 @@ class BertAidaProcessor(object):
                             aida_plain_path = os.path.join(aida_plain_dwie_path, aida_plain_dwie_file)
 
                             parsed_aida_original_tokenization = json.load(open(aida_plain_path))
-                            # print('parsed_aida_reannotated_johannes_tokenization gotten: ', parsed_aida_reannotated_johannes_tokenization)
-
-                            # what has to be done now?:
-                            #  - connect the mentions from parsed_aida_reannotated_johannes_tokenization to parsed_aida_original_tokenization
-                            #     - here it is even possible to run some consistency checks such as the types of entity
-                            #       clusters.
-                            #  - connect the start and end tokens of plain aida to candidate spans
-                            # link_tokenization = parsed_aida_reannotated_johannes_tokenization['tokenization']
 
                             # needed to extract the candidates based on the token ids
                             char_pos_begin_to_tok_idx = {char_pos: tok_idx for tok_idx, char_pos in
@@ -481,19 +422,13 @@ class BertAidaProcessor(object):
 
                             assert len(aida_plain_mentions) == len(aida_link_mentions)
 
-                            # TODO: (tok_idx_begin, tok_idx_end) to candidates
                             tok_idxs_to_candidates = dict()
-                            # TODO: check, this code (for loop for to get candidates - get_linker_candidates_all_spans)
-                            #  may be duplicated with gettin candidates in self.get_document ,
-                            #   merge it in the final version!!!
                             for span_begin, span_end, candidates in zip(parsed_cand['span_begin'],
                                                                         parsed_cand['span_end'],
                                                                         parsed_cand['candidates']):
                                 decoded_candidates = list()
                                 for cnd in candidates:
                                     decoded_candidate = cnd.encode('ascii', 'backslashreplace').decode('unicode-escape')
-                                    # if 'ul_Piatra_Neam' in decoded_candidate:
-                                    #     print('hard case , debug!!')
                                     if decoded_candidate in self.hard_encoding_cases:
                                         decoded_candidate = self.hard_encoding_cases[decoded_candidate]
                                     decoded_candidates.append(decoded_candidate)
@@ -515,14 +450,10 @@ class BertAidaProcessor(object):
                             # make sure the link is correctly encoded for each of the concepts
                             for curr_concept in parsed_aida_original_tokenization['concepts']:
                                 if 'link' in curr_concept and curr_concept['link'] is not None:
-                                    # if 'ul_Piatra_Neam' in curr_concept['link']:
-                                    #     print('debug here hard case!!')
                                     curr_concept['link'] = curr_concept['link'] \
                                         .encode('ascii', 'backslashreplace').decode('unicode-escape')
                                     if curr_concept['link'] in self.hard_encoding_cases:
                                         curr_concept['link'] = self.hard_encoding_cases[curr_concept['link']]
-
-                            #
 
                             # saves to json with updated linking annotations
                             output_plain_path = os.path.join(output_dir_aida_tok, aida_plain_dwie_file)
@@ -530,13 +461,6 @@ class BertAidaProcessor(object):
                             os.makedirs(os.path.dirname(output_plain_path), exist_ok=True)
 
                             json.dump(parsed_aida_original_tokenization, open(output_plain_path, 'w'), indent=4)
-
-                            ##### NOW IT starts passing everything to SpanBert format, similarly to
-                            # main_bert_processor_dwie: TODO/WIP checking there (main_bert_processor_dwie) first!
-                            # maybe can just be simply adapted.
-                            # for the candidate documents, check it probably would make sense to pass each of the
-                            # spans with candidates to (begin, end) format, so it can be easily integrated with the code
-                            # in main_bert_processor_dwie.py.
 
                             curr_doc = self.get_document(parsed_aida_original_tokenization, parsed_cand)
 
@@ -553,13 +477,9 @@ class BertAidaProcessor(object):
 
                             self.documents.append(curr_doc)
 
-                            # print('TODO:save')
-
     def save_to_disk(self):
-        # output_dir = args.output_dir
         for curr_doc in self.documents:
             file_name = '{}.json'.format(curr_doc['id'])
-            # set_type = ''
             if 'train' in curr_doc['tags']:
                 set_type = 'train'
             elif 'testa' in curr_doc['tags']:
@@ -571,10 +491,9 @@ class BertAidaProcessor(object):
             json.dump(curr_doc, open(os.path.join(output_dir_spanbert, set_type, file_name), 'w'))
         # also saves the link dictionary
         self.links_dictionary.write(os.path.join(output_dir_spanbert, 'links_dictionary.json'))
-        # links_dictionary.write(links_dictionary_path)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--aida_link_path', type=str,
                         default='data/aida/aida_reannotated/aida-20210402/current',
@@ -584,7 +503,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--aida_candidate_path', type=str,
                         default='third_party/kolitsas_e2e/data/json_records/corefmerge/allspans',
-                        help='The file with link candidates for aida produces by the adapted script originally '
+                        help='The file with link candidates for aida produced by the adapted script originally '
                              'downloaded from the github of the work of Kolitsas et al. The script is in '
                              'third_party/kolitsas_e2e/prepro_util.py.')
 
@@ -626,7 +545,7 @@ if __name__ == "__main__":
 
     # dictionary, already preloads NONE and NILL
     aida_link_dictionary: Dictionary = Dictionary()
-    # aida_link_dictionary.add('NONE')
+
     aida_link_dictionary.add('NILL')
 
     bert_processor = BertAidaProcessor(args, links_dictionary=aida_link_dictionary)

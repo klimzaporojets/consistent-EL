@@ -2,7 +2,8 @@
   "dictionaries": {
     "entities": {
       "init": {
-        "filename": "data/dwie/spanbert_format/links_dictionary.json",
+        "_filename": "links_dictionary.json",
+        "filename": "data/aida+/spanbert_format/links_dictionary.json",
         "type": "json"
       },
       "append": [
@@ -37,14 +38,14 @@
       "hidden_dim": 300,
       "ffnn_depth": 2,
       "hidden_dropout": 0.3,
-      "prune_ratio": 0.2,
+      "prune_ratio": 0.40,
       "sort_after_pruning": true,
       "add_pruner_loss": true,
       "no_cross_overlap": true,
       "_no_cross_overlap": "whether should filter out overlapping spans",
       "use_width_prior": true,
       "_use_width_prior": "whether the width embedding has to be additionally used",
-      "max_num_extracted_spans": 3000,
+      "max_num_extracted_spans": 300,
       "debug_stats": true
     },
     "text_embedder": {
@@ -81,7 +82,7 @@
       "scorers_ffnn_depth": 2
     },
     "coref": {
-      "enabled": true,
+      "enabled": false,
       "weight": 1.0,
       "bidirectional": false,
       "filter_singletons_with_pruner": true,
@@ -101,26 +102,75 @@
         "scorers_ffnn_depth": 2
       }
     },
-    "linker": {
-      "enabled": false,
-      "weight": 1.0,
-      "hidden_dim": 300,
-      "hidden_dropout": 0.3,
-      "scorers_ffnn_depth": 2,
-      "init_weights_std": 0.02,
+    "coreflinker": {
+      "enabled": true,
+      "type": "coreflinker",
+      "filter_singletons_with_pruner": true,
+      "filter_singletons_with_ner": false,
+      "filter_singletons_with_matrix": false,
+      "filter_only_singletons": true,
+      "ignore_no_mention_chains": true,
+      "subtract_pruner_for_singletons": true,
+      "float_precision": "float64",
       "doc_level_candidates": false,
-      "source": "pruned",
+      "weight": 1.0,
+      "model_type": "base-hoi",
+      "_model_type": "STILL NOT SURE IF WE WILL NEED THIS IN coreflinker_mtt. The possible values are 'base' and 'super-naive' for now. The 'base' is implemented in OptFFpairsLinkerCorefBase and 'super-naive' is implemented in OptFFpairsLinkerCorefNaive. In theory, 'base' should perform better than 'super-naive'.",
+      "nonlinear_function": "arsinh",
+      "_nonlinear_function": "The function to apply to the scores. If null, no function is applied. Another function is 'arsinh'.",
+      "smart_arsinh": false,
+      "pred_arsinh": true,
+      "multihead_nil": "multihead_prod",
+      "_multihead_nil": "If 'none' just does a single connection from root for each of the NIL spans. If 'first', only connects the first span. If 'multihead_prod' does the multihead using products as explained in https://docs.google.com/presentation/d/1Za2gCNq55gp1MCTlg4p0CN-JGyKjj4WtzxpYJKDZz3E/edit#slide=id.gd02f9cc825_0_419. If 'multihead_old' does the old multihead subtracting matrices, but I think is wrong.",
+      "log_inf_mask": true,
+      "exp_trick": true,
+      "zeros_to_clusters": false,
+      "_zeros_to_clusters": "if 0 has to be assigned as a score from root to links and spans",
+      "no_nil_in_targets": true,
+      "print_debugging": false,
+      "enforce_scores": false,
+      "min_score_max": -0.1,
+      "min_score_min": -100.0,
+      "max_score_max": 100.0,
+      "max_score_min": 0.1,
+      "coreflinker_prop": {
+        "type": "default",
+        "coref_prop": 0,
+        "hidden_dim": 300,
+        "hidden_dropout": 0.3,
+        "components_ffnn_depth": 0,
+        "init_root_std": null,
+        "init_weights_std": 0.02,
+        "init_zeros_bias": true,
+        "scorers_ffnn_depth": 2,
+        "use_nonlinearity_components": false,
+        "use_nonlinearity_scorers": true,
+        "update_coref_scores": true,
+        "separate_right_spans_for_ent": false,
+        "filter_with_matrix_type": null,
+        "root_requires_grad": false,
+        "_root_requires_grad": "if in true, then the root node embedding in adjacency matrix will be updated as trained. For more details on why root is needed refer to https://www.aclweb.org/anthology/D07-1015.pdf ('Structured Prediction Models via the Matrix-Tree Theorem') paper."
+      },
       "entity_embedder": {
+        "type": "kolitsas",
         "dict": "entities",
-        "type": "yamada-johannes",
-        "embed_file": "embeddings/entity_embeddings/yamada/enwiki_200.txt.gz",
-        "filtered_file": "embeddings/entity_embeddings/yamada/enwiki_200_filtered_dwie_e2e.txt",
-        "use_filtered": true,
+        "load_extension": false,
+        "embed_file": "embeddings/entity_embeddings/kolitsas/ent_vecs.npy",
+        "extension_embed_file": "embeddings/entity_embeddings/kolitsas/extension_entities/ent_vecs.npy",
+        "extension_ent_id_to_wiki_id_file": "embeddings/entity_embeddings/kolitsas/extension_entities/nnid2wikiid.txt",
+        "ent_id_to_wiki_id_file": "embeddings/entity_embeddings/kolitsas/nnid2wikiid.txt",
+        "wiki_id_to_wiki_link_file": "embeddings/entity_embeddings/kolitsas/wiki_name_id_map.txt",
+        "entities_universe_file": "embeddings/entity_embeddings/kolitsas/entities_universe.txt",
+        "extension_entities_universe_file": "embeddings/entity_embeddings/kolitsas/extension_entities/entities_universe.txt",
+        "filtered_file": "",
+        "use_filtered": false,
         "load_type": "ent_wordentvec",
         "_load_type": "Indicates the loading type, for example 'wordvec' just loads normally the token embedding file such as glove.6B.100d.txt.gz ; 'word_wordentvec' on the other hand is used to load the word embeddings from the file that contains both word and entity embeddings such as enwiki_200.txt.; 'ent_wordentvec' does the opposite: loads the entities from the file that contains both word and entity embeddings.",
         "what_load": "dictionary",
         "_what_load": "If in 'allvecs', then loads all the vectors from the embeddings file, if 'dictionary' only loads the vectors that are present in the dictionary (for a particular dataset we are training on). In order to evaluate on third party datasets/to put as a service, it has to be configured in 'allvecs' then. When in True, also adds the entries into the dictionary.",
-        "dim": 200,
+        "dim": 300,
+        "refit_ratio": null,
+        "norm_clip": 2355.0,
         "dropout": 0.0,
         "freeze": true,
         "init_unknown": false,
@@ -136,7 +186,7 @@
     "write-last-model": true,
     "clip-norm": 10.0,
     "model": "last.model",
-    "report_frequency": 702,
+    "report_frequency": 946,
     "adam_eps": 1e-6,
     "adam_weight_decay": 1e-2,
     "warmup_ratio": 0.1,
@@ -161,7 +211,7 @@
   },
   "dataloader": {
     "type": "dwie_spanbert_hoi",
-    "include_nill_in_candidates": true,
+    "include_nill_in_candidates": false,
     "include_none_in_candidates": false,
     "doc_level_candidates": false,
     "all_spans_candidates": true,
@@ -171,19 +221,27 @@
   },
   "datasets": {
     "train": {
-      "filename": "data/dwie/spanbert_format/dwie_bert_s384/",
+      "filename": "data/aida+/spanbert_format/train/",
       "tokenize": false,
       "shuffle_candidates": true,
       "load-in-memory": true,
       "tag": "train",
       "train_linker_tag": "all"
     },
-    "test": {
-      "filename": "data/dwie/spanbert_format/dwie_bert_s384/",
+    "testa": {
+      "filename": "data/aida+/spanbert_format/testa/",
       "tokenize": false,
       "shuffle_candidates": true,
       "load-in-memory": true,
-      "tag": "test",
+      "tag": "testa",
+      "train_linker_tag": "all"
+    },
+    "testb": {
+      "filename": "data/aida+/spanbert_format/testb/",
+      "tokenize": false,
+      "shuffle_candidates": true,
+      "load-in-memory": true,
+      "tag": "testb",
       "train_linker_tag": "all"
     }
   },
@@ -191,15 +249,18 @@
     "train": "train",
     "version": "spanbert",
     "evaluate": [
-      "test"
+      "testa",
+      "testb"
     ],
     "evaluation_frequency": {
       "train": -1,
-      "test": -1
+      "testa": -1,
+      "testb": -1
     },
     "loss_frequency": {
       "train": -1,
-      "test": -1
+      "testa": -1,
+      "testb": -1
     },
     "write-predictions": true
   }

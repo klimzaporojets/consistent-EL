@@ -11,10 +11,15 @@ import argparse
 import ast
 import itertools
 import json
+import logging
 import os
 import pickle
 
-if __name__ == "__main__":
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--link_embeddings_file', type=str, help='the file path to entity embeddings',
@@ -65,12 +70,10 @@ if __name__ == "__main__":
             if not line.startswith('1#'):
                 nr_added += 1
                 if nr_added % 100000 == 0:
-                    print('nr added links: ', nr_added)
-                    # break
+                    logging.info('nr added links: %d' % nr_added)
                 link_to_add = line[:line.index(' ')].strip()
                 assert link_to_add != ''
                 links_in_embeddings.add(link_to_add)
-                # print('one line of embedding file is: ', line)
         to_serialize = list(sorted(links_in_embeddings))
         json.dump(to_serialize, open(link_embeddings_file_serialized, 'w'))
     else:
@@ -83,7 +86,7 @@ if __name__ == "__main__":
     do_fixed1 = True
     do_fixed_redirects = True
     not_found_fixed1_list = list()
-    print('length of aida_dictionary: ', len(aida_dictionary))
+    logging.info('length of aida_dictionary: %d' % len(aida_dictionary))
     original_to_fixed = dict()
     already_found = set()
 
@@ -92,7 +95,6 @@ if __name__ == "__main__":
     wiki_id_to_redirected_link = dict()
     if do_fixed_redirects:
         # this is on
-        # wiki_pages_path = 'TODO'
         wiki_dump_links = set()
         nr_wiki_dumps_parsed = 0
         if not os.path.exists(wikipedia_page_dump_pickle):
@@ -100,7 +102,7 @@ if __name__ == "__main__":
                 for line in infile:
                     nr_wiki_dumps_parsed += 1
                     if nr_wiki_dumps_parsed % 1 == 0:
-                        print('nr of lines in wikidump parsed: ', nr_wiki_dumps_parsed)
+                        logging.info('nr of lines in wikidump parsed: %d' % nr_wiki_dumps_parsed)
                     if line.startswith('INSERT INTO `page` VALUES'):
                         parsed_line = line[line.index('('):].strip()[:-1]
                         parsed_line = parsed_line.replace(',NULL)', ',None)')
@@ -112,21 +114,15 @@ if __name__ == "__main__":
                             with open('output_error.log', 'w') as outerror:
                                 outerror.write(parsed_line)
                             raise RuntimeError(' wrong parsing')
-                            # print('the parsed line at this point is: ', parsed_line)
                         for curr_register in parsed_line:
                             wiki_id = curr_register[0]
                             wiki_namespace = curr_register[1]
                             wiki_link = curr_register[2]
-                            # wiki_id = '{}_{}'.format(wiki_id, wiki_namespace)
-                            # if wiki_link in wiki_dump_links:
-                            #     print('WARNING, this link was already processed: ', wiki_link,
-                            #           ' with the following id: ', wiki_link_to_wiki_id[wiki_link],
-                            #           ' current id: ', wiki_id, ' probably disambiguation page ')
                             if wiki_id in wiki_id_to_wiki_link:
-                                print('WARNING, this wiki id was already processed: ', wiki_id, ' to ',
-                                      wiki_id_to_wiki_link[wiki_id], ' and now it points to ', wiki_link)
+                                logging.warning(
+                                    'WARNING, this wiki id was already processed: %s to %s and now it points to %s' %
+                                    (wiki_id, wiki_id_to_wiki_link[wiki_id], wiki_link))
                             wiki_id_to_wiki_link[wiki_id] = wiki_link
-                            # wiki_link_to_wiki_id[wiki_link] = wiki_id
                             wiki_dump_links.add(wiki_link)
             pickle.dump(wiki_id_to_wiki_link, open(wikipedia_page_dump_pickle, 'wb'))
         else:
@@ -139,7 +135,7 @@ if __name__ == "__main__":
                     if line.startswith('INSERT INTO `redirect` VALUES'):
                         nr_wiki_dumps_parsed += 1
                         if nr_wiki_dumps_parsed % 1 == 0:
-                            print('nr of lines in wiki redirect parsed: ', nr_wiki_dumps_parsed)
+                            logging.info('nr of lines in wiki redirect parsed: %s' % nr_wiki_dumps_parsed)
                         parsed_line = line[line.index('('):].strip()[:-1]
                         parsed_line = parsed_line.replace('NULL', 'None')
                         parsed_line = '[' + parsed_line + ']'
@@ -148,7 +144,6 @@ if __name__ == "__main__":
                             wiki_id = curr_register[0]
                             wiki_namespace = curr_register[1]
                             redirected_link = curr_register[2]
-                            # wiki_id = '{}_{}'.format(wiki_id, wiki_namespace)
                             wiki_id_to_redirected_link[wiki_id] = redirected_link
                             if wiki_id in wiki_id_to_wiki_link:
                                 # one link can be associated with multiple wiki ids (ex: because they are in
@@ -157,8 +152,8 @@ if __name__ == "__main__":
                                     wiki_link_to_wiki_ids[wiki_id_to_wiki_link[wiki_id]] = list()
                                 wiki_link_to_wiki_ids[wiki_id_to_wiki_link[wiki_id]].append(wiki_id)
                             else:
-                                print('WARNING following wiki_id from redirects not in the universe: ',
-                                      wiki_id)
+                                logging.debug('following wiki_id from redirects not in the universe: %s' %
+                                             wiki_id)
             pickle.dump({'wiki_link_to_wiki_ids': wiki_link_to_wiki_ids,
                          'wiki_id_to_redirected_link': wiki_id_to_redirected_link},
                         open(wikipedia_page_redirect_pickle, 'wb'))
@@ -166,20 +161,17 @@ if __name__ == "__main__":
             pckled = pickle.load(open(wikipedia_page_redirect_pickle, 'rb'))
             wiki_link_to_wiki_ids = pckled['wiki_link_to_wiki_ids']
             wiki_id_to_redirected_link = pckled['wiki_id_to_redirected_link']
-        # wiki_link_to_wiki_id = {v: k for k, v in wiki_id_to_wiki_link.items()}
-
-        # assert len(wiki_link_to_wiki_id) == len(wiki_id_to_wiki_link)
 
     for k, v in aida_dictionary.items():
         assert k in aida_dictionary
         total += 1
         if total % 10000 == 0:
-            print('processed of aida dictionary: ', total)
+            logging.info('processed of aida dictionary: %s' % total)
         if k in links_in_embeddings:
             if k not in already_found:
                 found += 1
             else:
-                print('already has been found: ', k)
+                logging.info('already has been found: %s' % k)
             already_found.add(k)
         else:
             is_fixed = False
@@ -193,7 +185,7 @@ if __name__ == "__main__":
                                 if new_link not in original_to_fixed:
                                     original_to_fixed[new_link] = list()
                                 original_to_fixed[new_link].append(k)
-                                print('fixed by redirect: ', k, ' (old) to ', new_link, ' (new)')
+                                logging.info('fixed by redirect: %s (old) to %s (new)' % (k, new_link))
                                 found += 1
                                 is_fixed = True
                                 break
@@ -202,11 +194,8 @@ if __name__ == "__main__":
             # tries to combine first letter lowercased
             if do_fixed1:
                 sp_k = k.split('_')
-                # print('splitted length: ', len(sp_k))
                 if len(sp_k) <= 10:
-                    # lst_combinations = list()
                     for curr_comb in itertools.product([0, 1], repeat=len(sp_k)):
-                        # print('curr comb: ', curr_comb)
                         to_search = ''
                         for idx_c, comb in enumerate(curr_comb):
                             curr_token = sp_k[idx_c]
@@ -234,16 +223,17 @@ if __name__ == "__main__":
                                 found += 1
                                 already_found.add(k)
                             elif k in already_found:
-                                print('already has been found 2: ', k)
+                                logging.info('already has been found 2: %s' % k)
                             elif to_search in aida_dictionary:
-                                print('to_search is already in aida_dictionary: ', to_search, ' for k of : ', k)
+                                logging.info(
+                                    'to_search is already in aida_dictionary: %s for k of: %s' % (to_search, k))
                             break
             if is_fixed:
                 continue
 
             not_found_list.append(k)
-    print('total: ', total, ' found: ', found, ' % found: ', (found / total) * 100)
-    print('fixed 1: ', len(not_found_fixed1_list))
+    logging.info('total: %s found: %s, %% found: %s' % (total, found, (found / total) * 100))
+    logging.info('fixed 1: %s' % len(not_found_fixed1_list))
 
     # now opens back the embeddings file, reads it line by line and only adds the entries to another (filtered)
     # embeddings file that are present in the links dictionary, mapping the original embedding names to the
@@ -255,7 +245,7 @@ if __name__ == "__main__":
             if not line.startswith('1#'):
                 nr_processed += 1
                 if nr_processed % 100000 == 0:
-                    print('NR of processed links: ', nr_processed)
+                    logging.info('NR of processed links: %s' % nr_processed)
 
                 link_to_add = line[:line.index(' ')].strip()
                 assert link_to_add != ''
@@ -265,13 +255,10 @@ if __name__ == "__main__":
                     out_file.write(line)
                     orig_to_fix_fixed += 1
                     if len(original_to_fixed[link_to_add]) > 1:
-                        print('INTERESTING more than two links linked to a single one(' +
-                              link_to_add
-                              + '): ',
-                              original_to_fixed[link_to_add])
+                        logging.info('INTERESTING more than two links linked to a single one(%s): %s' %
+                                     (link_to_add, original_to_fixed[link_to_add]))
                     for curr_link in original_to_fixed[link_to_add]:
                         new_line = curr_link + line[line.index(' '):]
                         out_file.write(new_line)
-                        # print('new_line to add: ', new_line)
-    print('original_to_fixed fixed: ', orig_to_fix_fixed, ' len(original_to_fixed): ', len(original_to_fixed))
+    logging.info('original_to_fixed fixed: %s len(original_to_fixed): %s', (orig_to_fix_fixed, len(original_to_fixed)))
     assert orig_to_fix_fixed == len(original_to_fixed)

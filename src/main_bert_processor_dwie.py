@@ -12,10 +12,10 @@ from typing import Dict, List
 import torch
 from transformers import BertTokenizer
 
-from datass.dictionary import Dictionary
-from modules.bert_preprocessing import normalize_word, flatten, get_sentence_map
-from modules.ner.spanner import create_all_spans
-from modules.utils.misc import indices_to_spans
+from data_processing.bert_preprocessing import normalize_word, flatten, get_sentence_map
+from data_processing.dictionary import Dictionary
+from models.misc.spanner import create_all_spans
+from models.utils.misc import indices_to_spans
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
@@ -55,17 +55,12 @@ class JsonBertDocument(object):
         # Segments (mapped to subtokens with CLS, SEP)
         self.segments = []
         self.segment_subtoken_map = []
-        # self.segment_info = []  # Only non-none for the first subtoken of each word
 
         # self.spans_to_candidate_links = dict()  # all the spans pointing to candidates
         self.all_spans = list()  # all the spans pointing to candidates
         self.all_spans_candidates = list()  # candidates for the spans
         self.all_spans_candidates_scores = list()  # the scores for each of the candidates
         self.all_spans_candidates_targets = list()  # the target ids of the candidate list for each of the spans
-
-        # self.tags = list()
-
-        # self.max_nr_candidates = args.max_nr_candidates
 
     def convert_to_json(self):
         """ Returns the JSON in DWIE format but with BERT sub-tokenization """
@@ -85,13 +80,7 @@ class JsonBertDocument(object):
             'begin_token': self.begin_token,
             'end_token': self.end_token,
             'word_tokenization': self.tokens,
-            # 'word_tokenization': self.word_tokenization,
             'bert_tokenization': self.subtokens,
-            # TODO: check if the following structure is necessary
-            # {'subtokens': self.subtokens,
-            #  'begin': [],
-            #  'end': []
-            #  },
             'bert_segments': self.segments,
             'mentions': self.mentions,
             'concepts': self.concepts,
@@ -110,9 +99,6 @@ def get_tokenizer(bert_tokenizer_name):
 
 
 def load_linking_candidates(cands_path, max_cands, links_dictionary: Dictionary):
-    # first adds NONE and NILL to dictionary
-
-    # links_dictionary.add('NONE')
     links_dictionary.add('NILL')
 
     candidates_path = cands_path
@@ -139,11 +125,7 @@ def load_linking_candidates(cands_path, max_cands, links_dictionary: Dictionary)
         # passes to torch.tensor in order to decrease the memory footprint - the lists consume too much memory in python
         # candidates_list
         span_text_to_candidates[span_text]['candidates'] = candidates_list
-        # span_text_to_candidates[span_text]['candidates'] = torch.tensor(candidates_list, dtype=torch.int)
         span_text_to_candidates[span_text]['scores'] = scores_list
-        # span_text_to_candidates[span_text]['scores'] = torch.tensor(scores_list, dtype=torch.float)
-
-    # print('END LOADING LINKING CANDIDATES')
 
     return span_text_to_candidates, links_dictionary
 
@@ -193,8 +175,6 @@ class BertProcessor(object):
             subtoken_map = bert_doc.subtoken_map[curr_idx: end_idx + 1]
             bert_doc.segment_subtoken_map.append([prev_token_idx] + subtoken_map + [subtoken_map[-1]])
 
-            # bert_doc.segment_info.append([None] + bert_doc.info[curr_idx: end_idx + 1] + [None])
-
             curr_idx = end_idx + 1
             prev_token_idx = subtoken_map[-1]
         assert len(flatten(bert_doc.segments)) == max(map_subtoks_to_segmented_subtoks.values()) + 2
@@ -203,7 +183,6 @@ class BertProcessor(object):
     def get_linker_candidates_all_spans(self, input_content, all_spans, begin, end, span_mask):
         # no linking for span: empty candidate list
         lc = self.linking_candidates
-        # if self.train_linker_tag is None or self.train_linker_tag in tags:
         candidates = []
         candidates_scores = []
         for idx_span, curr_span in enumerate(all_spans):
@@ -220,29 +199,11 @@ class BertProcessor(object):
                     span_candidates = span_candidates[:self.args.max_nr_candidates]
                     span_scores = span_scores[:self.args.max_nr_candidates]
             else:
-                span_candidates = []  # torch.tensor(empty_candidates, dtype=torch.int32)
-                span_scores = []  # torch.tensor(empty_cand_scores, dtype=torch.float)
+                span_candidates = []
+                span_scores = []
 
             span_candidates.append(self.links_dictionary.lookup('NILL'))
             span_scores.append(1.0)
-            # = torch.cat((span_candidates, torch.tensor([self.links_dictionary.lookup('NILL')],
-            #                                 dtype=torch.int32)))
-            # span_scores = torch.cat((span_scores, torch.tensor([1.0])))
-
-            # span_candidates = torch.cat((span_candidates, torch.tensor([self.links_dictionary.lookup('NONE')],
-            #                                                            dtype=torch.int32)))
-            # span_scores = torch.cat((span_scores, torch.tensor([1.0])))
-
-            # span_candidates.append(self.links_dictionary.lookup('NONE'))
-            # span_scores.append(1.0)
-
-            # span_candidates = torch.cat((span_candidates, torch.tensor([self.links_dictionary.lookup('NILL')],
-            #                                                            dtype=torch.int32)))
-            # span_scores = torch.cat((span_scores, torch.tensor([1.0])))
-            #
-            # span_candidates = torch.cat((span_candidates, torch.tensor([self.links_dictionary.lookup('NONE')],
-            #                                                            dtype=torch.int32)))
-            # span_scores = torch.cat((span_scores, torch.tensor([1.0])))
 
             candidates.append(span_candidates)
             candidates_scores.append(span_scores)
@@ -254,8 +215,6 @@ class BertProcessor(object):
         """
         span_to_gold = dict()
         for mention in data['mentions']:
-            # if is_link_trainable(mention):
-            # entity_concept = data['concepts'][mention['concept']['concept']]
             entity_concept = data['concepts'][mention['concept']]
             if 'link' in entity_concept:
                 mention_correct = entity_concept['link']
@@ -265,8 +224,6 @@ class BertProcessor(object):
         targets = []
         for span_idx, curr_span in enumerate(all_spans):
             if curr_span not in span_to_gold:
-                # correct_link = 'NONE'
-                # (16/04/2021) after talk with Johannes, the correct is NILL here.
                 correct_link = 'NILL'
             else:
                 correct_link = span_to_gold[curr_span]
@@ -295,7 +252,7 @@ class BertProcessor(object):
 
         begin_to_index = {pos: idx for idx, pos in enumerate(begin)}
         end_to_index = {pos: idx for idx, pos in enumerate(end)}
-
+        max_end = max(end_to_index.keys())
         word_idx_to_first_subtoken_idx = dict()
         word_idx_to_last_subtoken_idx = dict()
         subtoken_idx = 0
@@ -338,9 +295,44 @@ class BertProcessor(object):
         assert len(bert_doc.subtokens) == len(bert_doc.sentence_end)
         # now maps all the mentions to the bert subtoken positions
         for mention in json_doc['mentions']:
+            #### BEGIN: for debug purposes only
+            if mention['end'] not in end_to_index:
+                logger.warning('WARNING END, the following mention is not represented by tokens: %s' % mention)
+                logger.warning('WARNING END chosing the widest one')
+                # last_end = end_to_index
+                while mention['end'] < max_end and mention['end'] not in end_to_index:
+                    mention['end'] += 1
+                if mention['end'] in end_to_index:
+                    if mention['begin'] in begin_to_index:
+                        logger.warning('WARNING END SUCCESS chosen the widest one: %s' %
+                                       json_doc['tokenization']['tokens']
+                                       [begin_to_index[mention['begin']]:end_to_index[mention['end']] + 1])
+                    else:
+                        logger.warning('WARNING END SUCCESS, BUT NO SHOW BECAUSE BEGIN WRONG')
+                else:
+                    logger.warning('WARNING END FAILURE can not do anything to adjust and of the mention, ignoring')
+                    continue
+
+            if mention['begin'] not in begin_to_index:
+                logger.warning(
+                    'WARNING BEGIN, the following mention is not represented by tokens (START): %s' % mention)
+                logger.warning('WARNING BEGIN chosing the widest one (START)')
+                # last_end = end_to_index
+                while mention['begin'] > 0 and mention['begin'] not in begin_to_index:
+                    mention['begin'] -= 1
+                if mention['begin'] in begin_to_index:
+                    logger.warning('WARNING BEGIN SUCCESS START chosen the widest one: %s' %
+                                   json_doc['tokenization']['tokens']
+                                   [begin_to_index[mention['begin']]:end_to_index[mention['end']] + 1])
+                else:
+                    logger.warning(
+                        'WARNING BEGIN FAILURE START can not do anything to adjust and of the mention, ignoring')
+                    continue
+            #### END: for debug purposes only
             token_begin = begin_to_index[mention['begin']]
             subtoken_begin = word_idx_to_first_subtoken_idx[token_begin]
             mention['subtoken_begin'] = subtoken_begin
+
             token_end = end_to_index[mention['end']]
             subtoken_end = word_idx_to_last_subtoken_idx[token_end]
             mention['subtoken_end'] = subtoken_end
@@ -381,15 +373,10 @@ class BertProcessor(object):
         # passes the spans from token (word) level to subtoken (bert) level
         l_span_mask = span_masked_scores[0].tolist()
 
-        # logger.info('BEFORE ERROR PROCESSING: ' + json_doc['id'])
         spans_data = []
 
         # Split documents
         map_subtoks_to_segmented_subtoks = self.split_into_segments(bert_doc, bert_doc.sentence_end, bert_doc.token_end)
-
-        # adjusts the position of subtokens of mentions as well as all_possible_spans to account for segments
-        # if the span size has changed (i.e. ["CLS"]/["SEP"] inserted in the middle, then just ignores it
-        #   TODO: check how much ignored there are of this type
 
         for curr_mention in json_doc['mentions']:
             diff_orig = curr_mention['subtoken_end'] - curr_mention['subtoken_begin']
@@ -435,7 +422,6 @@ class BertProcessor(object):
 
         # has to convert to torch.tensor because it is needed in this format inside get_linker_targets_all_spans
         linker_cands_all_spans = [torch.tensor(l, dtype=torch.int) for (_, _), l, _ in spans_data]
-        # linker_cands_all_spans_scores = [torch.tensor(ls, dtype=torch.float) for (_, _), _, ls in spans_data]
         linker_cands_all_spans_scores = [ls for (_, _), _, ls in spans_data]
         linker_targets_all_spans = self.get_linker_targets_all_spans(json_doc, all_possible_spans,
                                                                      linker_cands_all_spans)
@@ -443,7 +429,6 @@ class BertProcessor(object):
         bert_doc.all_spans = all_possible_spans
 
         bert_doc.all_spans_candidates = [t.tolist() for t in linker_cands_all_spans]
-        # bert_doc.all_spans_candidates_scores = [t.tolist() for t in linker_cands_all_spans_scores]
         bert_doc.all_spans_candidates_scores = linker_cands_all_spans_scores
         bert_doc.all_spans_candidates_targets = linker_targets_all_spans
 
@@ -464,13 +449,10 @@ class BertProcessor(object):
                     parsed_file = json.load(open(os.path.join(dirpath, curr_file)))
                     curr_doc = self.get_document(parsed_file)
 
-                    # file_name = '{}.json'.format(curr_doc['id'])
-                    # json.dump(curr_doc, open(os.path.join(args.output_dir, 'dwie_bert', file_name), 'w'))
-
                     self.documents.append(curr_doc)
 
     def save_to_disk(self):
-        print('saving to disk in DWIE format please wait...')
+        logger.info('saving to disk in DWIE format please wait...')
         output_dir = args.output_dir
 
         for curr_doc in self.documents:
@@ -478,11 +460,11 @@ class BertProcessor(object):
             json.dump(curr_doc, open(os.path.join(output_dir, 'dwie_bert_s{}'.format(args.max_seg_len),
                                                   file_name), 'w', encoding='utf8'), ensure_ascii=False)
 
-        print('finished saving to disk in DWIE format')
+        logger.info('finished saving to disk in DWIE format')
 
     def save_to_disk_hoi_format(self):
         """Saves to disk, but in the format that can be used as input to https://github.com/lxucs/coref-hoi"""
-        print('saving to disk in hoi format please wait...')
+        logger.info('saving to disk in hoi format please wait...')
         output_dir = args.output_dir_hoi
         path_dev = os.path.join(output_dir, 'dwie.dev.english.{}.jsonlines'.format(args.max_seg_len))
         path_train = os.path.join(output_dir, 'dwie.train.english.{}.jsonlines'.format(args.max_seg_len))
@@ -493,7 +475,6 @@ class BertProcessor(object):
             cluster_to_mention = dict()
             struct_output = dict()  # output to be saved to disk
             # passes clusters to hoi format
-            # print('curr_doc: ', curr_doc)
             struct_output['doc_key'] = curr_doc['id']
             for curr_mention in curr_doc['mentions']:
                 cluster_id = curr_mention['concept']
@@ -510,7 +491,6 @@ class BertProcessor(object):
 
             sorted_clusters = sorted(cluster_to_mention.items(), key=lambda x: x[0])
             sorted_clusters = [x for _, x in sorted_clusters]
-            # print('sorted clusters is: ', sorted_clusters)
             struct_output['clusters'] = sorted_clusters
             struct_output['constituents'] = []
             struct_output['ner'] = []
@@ -524,38 +504,31 @@ class BertProcessor(object):
             else:
                 out_file_dev.write(json.dumps(struct_output) + '\n')
 
-        print('Finished saving to disk in hoi format')
-        # print('')
+        logger.info('Finished saving to disk in hoi format')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--tokenizer_name', type=str, default='bert-base-cased',
                         help='Name or path of the tokenizer/vocabulary')
     parser.add_argument('--input_dir', type=str,
-                        default='data/data-20200921',
+                        default='data/dwie/plain_format/data/annos_with_content/',
                         # default='data/local_tests/dwie-original-1',
                         help='Input directory that contains DWIE files')
-    parser.add_argument('--output_dir', type=str, default='data/data-20200921-bert',
+    parser.add_argument('--output_dir', type=str, default='data/dwie/spanbert_format/',
                         # parser.add_argument('--output_dir', type=str, default='data/local_tests/data-bert-1',
                         # parser.add_argument('--output_dir', type=str, default='data/local_tests/data-bert',
                         help='Output directory')
-    # parser.add_argument('--output_dir_hoi', type=str, default='data/hoi/output_dwie-1',
-    parser.add_argument('--output_dir_hoi', type=str, default='data/hoi/output_dwie',
+    parser.add_argument('--output_dir_hoi', type=str, default='data/dwie/spanbert_format_hoi/',
                         help='Output directory')
-    parser.add_argument('--span_to_candidate_links_path', type=str,
-                        default='data/30092020-end-to-end-johannes/cpn-alias-table.json',
+    # parser.add_argument('--span_to_candidate_links_path', type=str,
+    parser.add_argument('--alias_table_path', type=str,
+                        default='data/dwie/dwie-alias-table/dwie-alias-table.json',
                         help='Path to alias file that contains spans to candidate list. ')
     parser.add_argument('--max_nr_candidates', type=int, default=16,
                         help='Maximum nr of candidates to take into account. ')
     parser.add_argument('--max_span_length', type=int, default=5,
                         help='Maximum length (in words) for candidates. ')
-    # parser.add_argument('--no_link_in_candidates_strategy', type=str, default='nill',
-    #                     help='In case no correct link in candidate list is present, the baseline should be trained '
-    #                          'on nill, since it only predicts locally (with local candidates), this is not '
-    #                          'the case for coreflinker that can actually benefit . ')
-    # parser.add_argument('--max_seg_len', type=int, default=256,
-                        # parser.add_argument('--max_seg_len', type=int, default=256,
     parser.add_argument('--max_seg_len', type=int, default=384,
                         help='Segment length: 128, 256, 384, 512')
 
@@ -570,10 +543,9 @@ if __name__ == "__main__":
 
     if os.path.isfile(links_dictionary_path) and os.path.isfile(candidate_links_path):
         candidate_links = pickle.load(open(candidate_links_path, 'rb'))
-        # links_dictionary = pickle.load(open(links_dictionary_path, 'rb'))
         links_dictionary.load_json(links_dictionary_path)
     else:
-        candidate_links, links_dictionary = load_linking_candidates(args.span_to_candidate_links_path,
+        candidate_links, links_dictionary = load_linking_candidates(args.alias_table_path,
                                                                     args.max_nr_candidates,
                                                                     links_dictionary=links_dictionary)
         pickle.dump(candidate_links, open(candidate_links_path, 'wb'))
@@ -585,4 +557,4 @@ if __name__ == "__main__":
 
     bert_processor.save_to_disk()
 
-    bert_processor.save_to_disk_hoi_format()
+    # bert_processor.save_to_disk_hoi_format()

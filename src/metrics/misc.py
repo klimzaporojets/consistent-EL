@@ -1,14 +1,20 @@
+import logging
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+logger = logging.getLogger()
+
 
 class MetricObjective:
 
     def __init__(self, task):
         self.task = task
         self.clear()
-        
+
     def clear(self):
         self.total = 0
         self.iter = 0
-    
+
     def step(self):
         self.total = 0
         self.iter += 1
@@ -20,8 +26,7 @@ class MetricObjective:
         self.total += args['loss']
 
     def print(self, dataset_name, details=False):
-        print('EVAL-OBJ\t{}-{}\tcurr-iter: {}\tobj: {}'.format(dataset_name, self.task, self.iter, self.total))
+        logger.info('EVAL-OBJ\t{}-{}\tcurr-iter: {}\tobj: {}'.format(dataset_name, self.task, self.iter, self.total))
 
     def log(self, tb_logger, dataset_name):
-        # tb_logger.log_value('{}/{}-obj'.format(dataset_name, self.task), self.total, self.iter)
         tb_logger.log_value('metrics/{}/obj'.format(self.task), self.total, self.iter)

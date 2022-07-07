@@ -1,9 +1,7 @@
 # import models.entbydesc as entybydesc
 # from models.coref import Coref1
 # from models.coref2 import Coref2
-from models.coreflinker.coreflinker_spanbert import CoreflinkerSpanBert
-from models.coreflinker.coreflinker_spanbert_hoi import CoreflinkerSpanBertHoi
-from models.coreflinker.dygie3 import MyDygie3
+from models.models.coreflinker_spanbert_hoi_scorer import CoreflinkerSpanBertHoi
 # from models.linker_adv import LinkerAdv1
 # from models.lm import LM1, LM2
 # from models.more import MyModel6
@@ -70,6 +68,6 @@ def model_create(config, dictionaries):
 # register_model('tc-1', TC1)
 # register_model('dygie', MyDygie)
 # register_model('dygie2', MyDygie2)
-register_model('dygie3', MyDygie3)
-register_model('coreflinker_spanbert', CoreflinkerSpanBert)
+# register_model('dygie3', MyDygie3)
+# register_model('coreflinker_spanbert', CoreflinkerSpanBert)
 register_model('coreflinker_spanbert_hoi', CoreflinkerSpanBertHoi)

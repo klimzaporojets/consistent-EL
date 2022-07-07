@@ -1,4 +1,11 @@
-from external.python_cpn_eval import MetricCoref
+import logging
+
+# from misc.python_cpn_eval import MetricCoref
+from misc.cpn_eval import MetricCoref
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+logger = logging.getLogger()
 
 
 # version modified by Klim to include singletons
@@ -32,24 +39,27 @@ class MetricCorefExternal:
             self.coref_ceafe_singleton_ent.add(pred, gold)
 
             if self.debug:
-                print("ID", metadata['identifiers'][idx])
-                print("pred:", pred)
-                print("gold:", gold)
+                logger.debug('ID %s' % metadata['identifiers'][idx])
+                logger.debug('pred: %s', pred)
+                logger.debug('gold: %s', gold)
                 tokens = metadata['tokens'][idx]
-                print("pred:", [[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in pred])
-                print("gold:", [[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in gold])
-                print()
+                logger.debug('pred: %s' %
+                             ([[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in pred]))
+                logger.debug('gold: %s' %
+                             ([[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in gold]))
 
     def print(self, dataset_name, details=False):
-        print('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'.format(dataset_name, self.task, self.iter, "muc-ext",
-                                                                   self.coref_muc.get_f1()))
-        print('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'.format(dataset_name, self.task, self.iter, "bcubed-m-ext",
-                                                                   self.coref_bcubed_singleton_men.get_f1()))
-        print('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'.format(dataset_name, self.task, self.iter, "ceaf-e-ext",
-                                                                   self.coref_ceafe_singleton_ent.get_f1()))
-        tmp = (
-                      self.coref_muc.get_f1() + self.coref_bcubed_singleton_men.get_f1() + self.coref_ceafe_singleton_ent.get_f1()) / 3
-        print('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'.format(dataset_name, self.task, self.iter, "avg-ext", tmp))
+        logger.info('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'
+                    .format(dataset_name, self.task, self.iter, 'muc-ext', self.coref_muc.get_f1()))
+        logger.info('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'
+                    .format(dataset_name, self.task, self.iter, 'bcubed-m-ext',
+                            self.coref_bcubed_singleton_men.get_f1()))
+        logger.info('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'
+                    .format(dataset_name, self.task, self.iter, 'ceaf-e-ext', self.coref_ceafe_singleton_ent.get_f1()))
+        tmp = (self.coref_muc.get_f1() + self.coref_bcubed_singleton_men.get_f1() +
+               self.coref_ceafe_singleton_ent.get_f1()) / 3
+        logger.info('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'
+                    .format(dataset_name, self.task, self.iter, 'avg-ext', tmp))
 
     def log(self, tb_logger, dataset_name):
         # (kzaporoj) - log to tensorboard

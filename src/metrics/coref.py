@@ -1,3 +1,4 @@
+import logging
 from collections import Counter
 
 import numpy as np
@@ -5,9 +6,12 @@ import torch
 from scipy.optimize import linear_sum_assignment
 
 ## MOSTLY COPIED FROM ALLENNLP
-from datass.dictionary import Dictionary
 
 backup = None
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+logger = logging.getLogger()
 
 
 def set_backup(scores):
@@ -20,28 +24,24 @@ def decode_m2i(scores, lengths):
     for b, length in enumerate(lengths.tolist()):
         m2i = list(range(length))
         if length > 0:
-            # print('scores:', length, scores[b, 0:length, :])
-            # _, indices = torch.max(scores[b, 0:length, 0:length], -1)
             _, indices = torch.max(scores[b, 0:length, :], -1)
             for src, dst in enumerate(indices.tolist()):
                 if src < len(m2i) and dst < len(m2i):
                     m2i[src] = m2i[dst]
                 else:
                     # sanity check: this should never ever happen !!!
-                    print("ERROR: invalid index")
-                    print("length:", length)
-                    print("scores:", scores[b, 0:length, :])
-                    print("scores:", scores.min().item(), scores.max().item())
-                    print("indices:", indices)
-                    print("LENGTHS:", lengths)
+                    logger.error('ERROR: invalid index')
+                    logger.error('\tlength: %s' % length)
+                    logger.error('\tscores: %s' % scores[b, 0:length, :])
+                    logger.error('\tscores: %s %s' % (scores.min().item(), scores.max().item()))
+                    logger.error('\tindices: %s' % indices)
+                    logger.error('\tLENGTHS: %s' % lengths)
                     torch.save(backup, 'backup.pt')
                     torch.save(scores, 'scores.pt')
                     torch.save(lengths, 'lengths.pt')
                     exit(1)
         output.append(m2i)
     return output
-
-
 
 
 def m2i_to_clusters(m2i):
@@ -117,12 +117,11 @@ class MetricCoref:
             r_num, r_den = self.m(gold_clusters, {k: (v, v) for k, v in enumerate(pred_m2i)})
 
             if self.verbose:
-                print("ID", identifier)
-                print('pred_clusters:', pred_clusters)
-                print('gold_clusters:', gold_clusters)
-                print('precision: {} / {}'.format(p_num, p_den))
-                print('recall:    {} / {}'.format(r_num, r_den))
-                print()
+                logger.debug('ID %s' % identifier)
+                logger.debug('pred_clusters: %s' % pred_clusters)
+                logger.debug('gold_clusters: %s' % gold_clusters)
+                logger.debug('precision: {} / {}'.format(p_num, p_den))
+                logger.debug('recall:    {} / {}'.format(r_num, r_den))
 
             self.precision_numerator += p_num
             self.precision_denominator += p_den
@@ -142,15 +141,6 @@ class MetricCoref:
         self.recall_denominator += r_den
 
     def update2(self, output_dict, metadata):
-        # print("UPDATE2")
-        # print("pred:", output_dict["pred"])
-        # print("gold:", output_dict["gold"])
-        # print()
-        # print("clusters:", output_dict["clusters"])
-        # print("coref_gold:", output_dict["coref_gold"])
-
-        # for pred, gold, identifier, tokens in zip(output_dict['pred'], output_dict['gold'], metadata['identifiers'],
-        #                                           metadata['tokens']):
         for pred, gold, identifier in zip(output_dict['pred'], output_dict['gold'], metadata['identifiers']):
             if pred is None and gold is None:
                 continue
@@ -161,69 +151,19 @@ class MetricCoref:
                 r_num, r_den = self.m(gold, mention2cluster(pred))
 
             if self.verbose:
-                print("ID", identifier)
-                print("pred:", pred)
-                print("gold:", gold)
+                logger.error('ID %s' % identifier)
+                logger.error('pred: %s' % pred)
+                logger.error('gold: %s' % gold)
                 # print("pred:", [[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in pred])
                 # print("gold:", [[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in gold])
-                print('precision: {} / {}'.format(p_num, p_den))
-                print('recall:    {} / {}'.format(r_num, r_den))
-                print()
+                logger.error('precision: {} / {}'.format(p_num, p_den))
+                logger.error('recall:    {} / {}'.format(r_num, r_den))
 
             self.precision_numerator += p_num
             self.precision_denominator += p_den
             self.recall_numerator += r_num
             self.recall_denominator += r_den
 
-    # def update2(self, output_dict, metadata):
-    #     print("UPDATE2")
-    #     print("pred:", output_dict["pred"])
-    #     print("gold:", output_dict["gold"])
-    #     print()
-    #     # print("clusters:", output_dict["clusters"])
-    #     # print("coref_gold:", output_dict["coref_gold"])
-    #     m = MetricCoref.b_cubed
-
-    #     for pred, gold_span2cluster, identifier in zip(output_dict["clusters"], output_dict["coref_gold"], metadata['identifiers']):
-    #         print("pred:", pred)                                    # [[(20, 20), (21, 21)], [(19, 20)]
-    #         # print("gold_span2cluster:", gold_span2cluster)          # {(0, 1): 0, (4, 4): 9}
-
-    #         pred_span2cluster = {}
-    #         for c, spans in enumerate(pred):
-    #             for span in spans:
-    #                 pred_span2cluster[span] = c
-    #         # print('pred_span2cluster:', pred_span2cluster)
-
-    #         gold = []
-    #         tmpindex = {}
-    #         for span, cluster in gold_span2cluster.items():
-    #             if cluster not in tmpindex:
-    #                 tmpindex[cluster] = len(gold)
-    #                 gold.append([])
-    #             gold[tmpindex[cluster]].append(span)
-    #         # print("gold:", gold)
-
-    #         gold_clusters, mention_to_gold = get_gold_clusters(gold)
-    #         _, mention_to_predicted = get_gold_clusters(pred)
-
-    #         if self.m == self.ceafe:
-    #             p_num, p_den, r_num, r_den = self.m(pred, gold)
-    #         else:
-    #             p_num, p_den = self.m(pred, mention_to_gold)
-    #             r_num, r_den = self.m(gold, mention_to_predicted)
-
-    #         if self.verbose:
-    #             print("ID", identifier)
-    #             print("pred:", pred)
-    #             print("gold:", gold)
-    #             print('precision: {} / {}'.format(p_num, p_den))
-    #             print('recall:    {} / {}'.format(r_num, r_den))
-    #             print()
-
-    #         self.precision_numerator += p_num
-    #         self.precision_denominator += p_den
-    #         self.recall_numerator += r_num
-    #         self.recall_denominator += r_den            
     def get_pr(self):
         precision = 0 if self.precision_denominator == 0 else \
             self.precision_numerator / float(self.precision_denominator)
@@ -247,15 +187,9 @@ class MetricCoref:
             self.max_f1 = f1
             self.max_iter = self.iter
 
-        print('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}\tmax-iter: {}\tmax-{}-f1: {}\tstall: {}'.format(dataset_name,
-                                                                                                           self.task,
-                                                                                                           self.iter,
-                                                                                                           self.name,
-                                                                                                           f1,
-                                                                                                           self.max_iter,
-                                                                                                           self.name,
-                                                                                                           self.max_f1,
-                                                                                                           self.iter - self.max_iter))
+        logger.info('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}\tmax-iter: {}\tmax-{}-f1: {}\tstall: {}'
+                    .format(dataset_name, self.task, self.iter, self.name, f1, self.max_iter, self.name,
+                            self.max_f1, self.iter - self.max_iter))
 
     def log(self, tb_logger, dataset_name):
         # tb_logger.log_value('{}/{}-f1'.format(dataset_name, self.name), self.get_f1(), self.iter)
@@ -370,12 +304,11 @@ class MetricCoref2:
             r_num, r_den = self.m(gold_clusters, pred_clusters)
 
             if self.verbose:
-                print("ID", identifier)
-                print('pred_clusters:', pred_clusters)
-                print('gold_clusters:', gold_clusters)
-                print('precision: {} / {}'.format(p_num, p_den))
-                print('recall:    {} / {}'.format(r_num, r_den))
-                print()
+                logger.debug('ID %s' % identifier)
+                logger.debug('pred_clusters: %s' % pred_clusters)
+                logger.debug('gold_clusters: %s' % gold_clusters)
+                logger.debug('precision: {} / {}'.format(p_num, p_den))
+                logger.debug('recall:    {} / {}'.format(r_num, r_den))
 
             self.precision_numerator += p_num
             self.precision_denominator += p_den
@@ -398,14 +331,15 @@ class MetricCoref2:
             r_num, r_den = self.m(gold, pred)
 
             if self.verbose:
-                print("ID", identifier)
-                print("pred:", pred)
-                print("gold:", gold)
-                print("pred:", [[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in pred])
-                print("gold:", [[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in gold])
-                print('precision: {} / {}'.format(p_num, p_den))
-                print('recall:    {} / {}'.format(r_num, r_den))
-                print()
+                logger.debug('ID %s' % identifier)
+                logger.debug('pred: %s' % pred)
+                logger.debug('gold: %s' % gold)
+                logger.debug('pred: %s' %
+                             ([[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in pred]))
+                logger.debug('gold: %s' %
+                             ([[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in gold]))
+                logger.debug('precision: {} / {}'.format(p_num, p_den))
+                logger.debug('recall:    {} / {}'.format(r_num, r_den))
 
             self.precision_numerator += p_num
             self.precision_denominator += p_den
@@ -425,15 +359,10 @@ class MetricCoref2:
             self.max_f1 = f1
             self.max_iter = self.iter
 
-        print('EVAL-COREF\tdataset: {}\tcurr-iter: {}\t{}-f1: {}\tmax-iter: {}\tmax-{}-f1: {}'.format(dataset_name,
-                                                                                                      self.iter,
-                                                                                                      self.name, f1,
-                                                                                                      self.max_iter,
-                                                                                                      self.name,
-                                                                                                      self.max_f1))
+        logger.info('EVAL-COREF\tdataset: {}\tcurr-iter: {}\t{}-f1: {}\tmax-iter: {}\tmax-{}-f1: {}'
+                    .format(dataset_name, self.iter, self.name, f1, self.max_iter, self.name, self.max_f1))
 
     def log(self, tb_logger, dataset_name):
-        # tb_logger.log_value('{}/{}-f1'.format(dataset_name, self.name), self.get_f1(), self.iter)
         tb_logger.log_value('metrics-coref/{}-f1'.format(self.name), self.get_f1(), self.iter)
 
     @staticmethod
@@ -502,16 +431,9 @@ class MetricCorefAverage:
             self.max_f1 = f1
             self.max_iter = self.iter
 
-        print('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}\tmax-iter: {}\tmax-{}-f1: {}\tstall: {}'.format(dataset_name,
-                                                                                                           self.task,
-                                                                                                           self.iter,
-                                                                                                           self.name,
-                                                                                                           f1,
-                                                                                                           self.max_iter,
-                                                                                                           self.name,
-                                                                                                           self.max_f1,
-                                                                                                           self.iter - self.max_iter))
+        logger.info('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}\tmax-iter: {}\tmax-{}-f1: {}\tstall: {}'
+                    .format(dataset_name, self.task, self.iter, self.name, f1, self.max_iter, self.name, self.max_f1,
+                            self.iter - self.max_iter))
 
     def log(self, tb_logger, dataset_name):
-        # tb_logger.log_value('{}/{}-f1'.format(dataset_name, self.name), self.get_f1(), self.iter)
         tb_logger.log_value('metrics-coref/{}-f1'.format(self.name), self.get_f1(), self.iter)

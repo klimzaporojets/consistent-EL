@@ -1,26 +1,8 @@
-from util.evaluator import EvaluatorLinker
+import logging
 
-
-class MetricLinker:
-
-    def __init__(self, task):
-        self.task = task
-        self.evaluator = EvaluatorLinker()
-        self.evaluator.progress = {}
-        self.epoch = 0
-
-    def step(self):
-        self.evaluator.stats = {'name': self.task, 'epoch': self.epoch}
-        self.epoch += 1
-
-    def update2(self, args, metadata={}):
-        self.evaluator.update(args['scores'], args['targets'], args['table'], args['loss'])
-
-    def print(self, dataset_name, details=False):
-        self.evaluator.evaluate()
-
-    def log(self, tb_logger, dataset_name):
-        print("SKIP")
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+logger = logging.getLogger()
 
 
 def exclude_links(links):
@@ -63,10 +45,6 @@ class MetricLinkerImproved:
             pred = self.filter(pred)
             gold = self.filter(gold)
 
-            # print('pred:', pred)
-            # print('gold:', gold)
-            # print()
-
             P = set(pred)
             G = set(gold)
 
@@ -90,10 +68,11 @@ class MetricLinkerImproved:
 
         stall = self.epoch - self.best_epoch
 
-        print(
-            "EVAL-LINKER\t{}-{}-{}\ttp: {:7}   fp: {:7}   fn: {:7}     pr: {:7.6f}   re: {:7.6f}   f1: {:7.6f}    stall: {:2}   best-f1: {:7.6f}".format(
-                dataset_name, self.task, self.mode, self.tp, self.fp, self.fn, self.get_pr(), self.get_re(),
-                self.get_f1(), stall, self.best_f1))
+        logger.info(
+            'EVAL-LINKER\t{}-{}-{}\ttp: {:7}   fp: {:7}   fn: {:7}     pr: {:7.6f}   re: {:7.6f}   '
+            'f1: {:7.6f}    stall: {:2}   best-f1: {:7.6f}'
+                .format(dataset_name, self.task, self.mode, self.tp, self.fp, self.fn, self.get_pr(), self.get_re(),
+                        self.get_f1(), stall, self.best_f1))
 
     def log(self, tb_logger, dataset_name):
         tb_logger.log_value('metrics-{}/{}'.format(self.task, self.mode + '-f1'), self.get_f1(), self.epoch)
@@ -150,17 +129,12 @@ class MetricLinkAccuracy:
 
         stall = self.epoch - self.best_epoch
 
-        print("EVAL-LINKER\t{}-{}\tlink-acc: {:7} / {:7} = {:7.6f}    stall: {:2}   best: {:7.6f}".format(dataset_name,
-                                                                                                          self.task,
-                                                                                                          self.numer,
-                                                                                                          self.denom,
-                                                                                                          acc, stall,
-                                                                                                          self.best_linkacc))
+        logger.info('EVAL-LINKER\t{}-{}\tlink-acc: {:7} / {:7} = {:7.6f}    stall: {:2}   best: {:7.6f}'
+                    .format(dataset_name, self.task, self.numer, self.denom, acc, stall, self.best_linkacc))
 
     def log(self, tb_logger, dataset_name):
         acc = self.numer / self.denom if self.numer != 0 else 0.0
         tb_logger.log_value('metrics-{}/{}'.format(self.task, 'acc'), acc, self.epoch)
-        # return
 
 
 # (kzaporoj) - accuracy without any candidates, based on predictions only, ignores the NILLs
@@ -200,12 +174,9 @@ class MetricLinkAccuracyNoCandidates:
 
         stall = self.epoch - self.best_epoch
 
-        print("EVAL-LINKER\t{}-{}\tlink-acc (no candidates): {:7} / {:7} = {:7.6f}    stall: {:2}   best: {:7.6f}".format(dataset_name,
-                                                                                                          self.task,
-                                                                                                          self.numer,
-                                                                                                          self.denom,
-                                                                                                          acc, stall,
-                                                                                                          self.best_linkacc))
+        logger.info(
+            'EVAL-LINKER\t{}-{}\tlink-acc (no candidates): {:7} / {:7} = {:7.6f}    stall: {:2}   best: {:7.6f}'
+                .format(dataset_name, self.task, self.numer, self.denom, acc, stall, self.best_linkacc))
 
     def log(self, tb_logger, dataset_name):
         acc = self.numer / self.denom if self.numer != 0 else 0.0

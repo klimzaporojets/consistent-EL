@@ -1,0 +1,188 @@
+{
+  "base_path": "experiments/",
+  "datasets": [
+    {
+      "dataset": "DWIE",
+      "_ground_truth_path": "data/dwie/spanbert_format/dwie_bert_s384/",
+      "ground_truth_path": "data/dwie/plain_format/data/annos_with_content/"
+    },
+    {
+      "dataset": "AIDA(a)+",
+      "_ground_truth_path": "data/aida+/spanbert_format/testa/",
+      "ground_truth_path": "data/aida+/plain/testa/"
+    },
+    {
+      "dataset": "AIDA(b)+",
+      "_ground_truth_path": "data/aida+/spanbert_format/testb/",
+      "ground_truth_path": "data/aida+/plain/testb/"
+    }
+  ],
+  "setups": [
+    {
+      "setup_alias": "Standalone",
+      "setup_tasks": [
+        "entity-linking"
+      ],
+      "predictions": [
+        {
+          "dataset": "AIDA(a)+",
+          "path": "predictions/testa/testa.jsonl",
+          "experiments": [
+            "aida-standalone-linking/e1",
+            "aida-standalone-linking/e2",
+            "aida-standalone-linking/e3",
+            "aida-standalone-linking/e4",
+            "aida-standalone-linking/e5"
+          ]
+        },
+        {
+          "dataset": "AIDA(b)+",
+          "path": "predictions/testb/testb.jsonl",
+          "experiments": [
+            "aida-standalone-linking/e1",
+            "aida-standalone-linking/e2",
+            "aida-standalone-linking/e3",
+            "aida-standalone-linking/e4",
+            "aida-standalone-linking/e5"
+          ]
+        },
+        {
+          "dataset": "DWIE",
+          "path": "predictions/test/test.jsonl",
+          "experiments": [
+            "dwie-standalone-linking/e1",
+            "dwie-standalone-linking/e2",
+            "dwie-standalone-linking/e3",
+            "dwie-standalone-linking/e4",
+            "dwie-standalone-linking/e5"
+          ]
+        }
+      ]
+    },
+    {
+      "setup_alias": "Standalone",
+      "setup_tasks": [
+        "coreference"
+      ],
+      "predictions": [
+        {
+          "dataset": "AIDA(a)+",
+          "path": "predictions/testa/testa.jsonl",
+          "experiments": [
+            "aida-standalone-coreference/e1",
+            "aida-standalone-coreference/e2",
+            "aida-standalone-coreference/e3",
+            "aida-standalone-coreference/e4",
+            "aida-standalone-coreference/e5"
+          ]
+        },
+        {
+          "dataset": "AIDA(b)+",
+          "path": "predictions/testb/testb.jsonl",
+          "experiments": [
+            "aida-standalone-coreference/e1",
+            "aida-standalone-coreference/e2",
+            "aida-standalone-coreference/e3",
+            "aida-standalone-coreference/e4",
+            "aida-standalone-coreference/e5"
+          ]
+        },
+        {
+          "dataset": "DWIE",
+          "path": "predictions/testb/testb.jsonl",
+          "experiments": [
+            "dwie-standalone-coreference/e1",
+            "dwie-standalone-coreference/e2",
+            "dwie-standalone-coreference/e3",
+            "dwie-standalone-coreference/e4",
+            "dwie-standalone-coreference/e5"
+          ]
+        }
+      ]
+    },
+    {
+      "setup_alias": "Local",
+      "setup_tasks": [
+        "coreference",
+        "entity-linking"
+      ],
+      "predictions": [
+        {
+          "dataset": "AIDA(a)+",
+          "path": "predictions/testa/testa.jsonl",
+          "experiments": [
+            "aida-local/e1",
+            "aida-local/e2",
+            "aida-local/e3",
+            "aida-local/e4",
+            "aida-local/e5"
+          ]
+        },
+        {
+          "dataset": "AIDA(b)+",
+          "path": "predictions/testb/testb.jsonl",
+          "experiments": [
+            "aida-local/e1",
+            "aida-local/e2",
+            "aida-local/e3",
+            "aida-local/e4",
+            "aida-local/e5"
+          ]
+        },
+        {
+          "dataset": "DWIE",
+          "path": "predictions/testb/testb.jsonl",
+          "experiments": [
+            "dwie-local/e1",
+            "dwie-local/e2",
+            "dwie-local/e3",
+            "dwie-local/e4",
+            "dwie-local/e5"
+          ]
+        }
+      ]
+    },
+    {
+      "setup_alias": "Global",
+      "setup_tasks": [
+        "coreference",
+        "entity-linking"
+      ],
+      "predictions": [
+        {
+          "dataset": "AIDA(a)+",
+          "path": "predictions/testa/testa.jsonl",
+          "experiments": [
+            "aida-global/e1",
+            "aida-global/e2",
+            "aida-global/e3",
+            "aida-global/e4",
+            "aida-global/e5"
+          ]
+        },
+        {
+          "dataset": "AIDA(b)+",
+          "path": "predictions/testb/testb.jsonl",
+          "experiments": [
+            "aida-global/e1",
+            "aida-global/e2",
+            "aida-global/e3",
+            "aida-global/e4",
+            "aida-global/e5"
+          ]
+        },
+        {
+          "dataset": "DWIE",
+          "path": "predictions/testb/testb.jsonl",
+          "experiments": [
+            "dwie-global/e1",
+            "dwie-global/e2",
+            "dwie-global/e3",
+            "dwie-global/e4",
+            "dwie-global/e5"
+          ]
+        }
+      ]
+    }
+  ]
+}

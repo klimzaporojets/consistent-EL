@@ -1,3 +1,8 @@
+import logging
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+logger = logging.getLogger()
 
 
 def to_pairwise(rels):
@@ -8,6 +13,7 @@ def to_pairwise(rels):
                 out.append((src, dst, rel))
     return set(out)
 
+
 def to_pairs(src_cluster, dst_cluster, rel):
     pairs = []
     for src in src_cluster:
@@ -15,8 +21,9 @@ def to_pairs(src_cluster, dst_cluster, rel):
             pairs.append((src, dst, rel))
     return set(pairs)
 
+
 def captions(cluster, tokens):
-    return [' '.join(tokens[begin:(end+1)]) for begin,end in cluster]
+    return [' '.join(tokens[begin:(end + 1)]) for begin, end in cluster]
 
 
 # concept wise relation
@@ -31,10 +38,10 @@ class MetricConceptRelationSoftF1:
         self.verbose = verbose
 
     def step(self):
-        self.p_tps = { l:0.0 for l in self.labels}
-        self.p_fps = { l:0.0 for l in self.labels}
-        self.r_tps = { l:0.0 for l in self.labels}
-        self.r_fns = { l:0.0 for l in self.labels}
+        self.p_tps = {l: 0.0 for l in self.labels}
+        self.p_fps = {l: 0.0 for l in self.labels}
+        self.r_tps = {l: 0.0 for l in self.labels}
+        self.r_fns = {l: 0.0 for l in self.labels}
         self.iter += 1
 
     def add(self, pred, gold):
@@ -60,19 +67,9 @@ class MetricConceptRelationSoftF1:
                 self.r_fns[rel] += fn
 
     def update2(self, args, metadata={}):
-        for batch, (pred, gold, identifier, tokens) in enumerate(zip(args['pred'], args['gold'], metadata['identifiers'], metadata['tokens'])):
-            # if self.verbose:
-            #     # print("pred:", pred)
-            #     # print("gold:", gold)
-            #     print("ID:", identifier)
-            #     print("pred:", [(rel, captions(src, tokens), captions(dst, tokens)) for src, dst, rel in pred])
-            #     if 'target' in args:
-            #         print("target:", [(rel, captions(src, tokens), captions(dst, tokens)) for src, dst, rel in args['target'][batch]])
-            #     print("gold:", [(rel, captions(src, tokens), captions(dst, tokens)) for src, dst, rel in gold])
-            #     print()
-
+        for batch, (pred, gold, identifier, tokens) in enumerate(
+                zip(args['pred'], args['gold'], metadata['identifiers'], metadata['tokens'])):
             self.add(pred, gold)
-            
 
     def print(self, dataset_name, details):
         total_p_tp, total_p_fp, total_r_tp, total_r_fn = 0, 0, 0, 0
@@ -85,7 +82,8 @@ class MetricConceptRelationSoftF1:
             f1 = 2.0 * pr * re / (pr + re) if pr * re != 0.0 else 0.0
 
             if self.verbose:
-                print('{:24}    {:5.1f} / {:5.1f} = {:6.5f}    {:5.1f} / {:5.1f} = {:6.5f}    {:6.5f}'.format(label, p_tp, p_fp, pr, r_tp, r_fn, re, f1))
+                logger.debug('{:24}    {:5.1f} / {:5.1f} = {:6.5f}    {:5.1f} / {:5.1f} = {:6.5f}    {:6.5f}'
+                             .format(label, p_tp, p_fp, pr, r_tp, r_fn, re, f1))
 
             total_p_tp += p_tp
             total_p_fp += p_fp
@@ -95,19 +93,20 @@ class MetricConceptRelationSoftF1:
         total_pr = total_p_tp / (total_p_tp + total_p_fp) if total_p_tp != 0 else 0.0
         total_re = total_r_tp / (total_r_tp + total_r_fn) if total_r_tp != 0 else 0.0
         total_f1 = 2.0 * total_pr * total_re / (total_pr + total_re) if total_pr * total_re != 0.0 else 0.0
-        
-        print('{:24}    {:5.1f} / {:5.1f} = {:6.5f}    {:5.1f} / {:5.1f} = {:6.5f}    {:6.5f}'.format('', total_p_tp, total_p_fp, total_pr, total_r_tp, total_r_fn, total_re, total_f1))
+
+        logger.info('{:24}    {:5.1f} / {:5.1f} = {:6.5f}    {:5.1f} / {:5.1f} = {:6.5f}    {:6.5f}'
+                    .format('', total_p_tp, total_p_fp, total_pr, total_r_tp, total_r_fn, total_re, total_f1))
 
         self.f1 = total_f1
         if self.f1 > self.max_f1:
             self.max_f1 = self.f1
             self.max_iter = self.iter
         stall = self.iter - self.max_iter
-        
-        print("EVAL-REL-SOFT\t{}-{}*\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}".format(dataset_name, self.task, self.iter, self.f1, self.max_iter, self.max_f1, stall))
-    
+
+        logger.info('EVAL-REL-SOFT\t{}-{}*\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}'
+                    .format(dataset_name, self.task, self.iter, self.f1, self.max_iter, self.max_f1, stall))
+
     def log(self, tb_logger, dataset_name):
-        # tb_logger.log_value('{}/{}-f1'.format(dataset_name, self.task), self.f1, self.iter)
         tb_logger.log_value('metrics/{}-f1'.format(self.task), self.f1, self.iter)
 
 
@@ -123,9 +122,9 @@ class MetricConceptRelationToMentionsF1:
         self.verbose = verbose
 
     def step(self):
-        self.tps = { l:0 for l in self.labels}
-        self.fps = { l:0 for l in self.labels}
-        self.fns = { l:0 for l in self.labels}
+        self.tps = {l: 0 for l in self.labels}
+        self.fps = {l: 0 for l in self.labels}
+        self.fns = {l: 0 for l in self.labels}
         self.total_tp = 0
         self.total_fp = 0
         self.total_fn = 0
@@ -146,39 +145,31 @@ class MetricConceptRelationToMentionsF1:
             self.total_fn += 1
 
     def update2(self, args, metadata={}):
-        for batch, (pred, gold, identifier, tokens) in enumerate(zip(args['pred'], args['gold'], metadata['identifiers'], metadata['tokens'])):
-            # if self.verbose:
-            #     # print("pred:", pred)
-            #     # print("gold:", gold)
-            #     print("ID:", identifier)
-            #     print("pred:", [(rel, captions(src, tokens), captions(dst, tokens)) for src, dst, rel in pred])
-            #     if 'target' in args:
-            #         print("target:", [(rel, captions(src, tokens), captions(dst, tokens)) for src, dst, rel in args['target'][batch]])
-            #     print("gold:", [(rel, captions(src, tokens), captions(dst, tokens)) for src, dst, rel in gold])
-            #     print()
-
+        for batch, (pred, gold, identifier, tokens) in enumerate(
+                zip(args['pred'], args['gold'], metadata['identifiers'], metadata['tokens'])):
             self.add(pred, gold)
-            
 
     def print(self, dataset_name, details=False):
         for label in self.labels:
             tp, fp, fn = self.tps[label], self.fps[label], self.fns[label]
             pr = tp / (tp + fp) if tp != 0 else 0.0
             re = tp / (tp + fn) if tp != 0 else 0.0
-            f1 = 2*tp / (2*tp + fp +fn) if tp != 0 else 0.0
+            f1 = 2 * tp / (2 * tp + fp + fn) if tp != 0 else 0.0
             if self.verbose:
-                print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format(label, tp, fp, fn, pr, re, f1))
-        
-        print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format('', self.total_tp, self.total_fp, self.total_fn, self.pr(), self.re(), self.f1()))
+                logger.debug('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'
+                             .format(label, tp, fp, fn, pr, re, f1))
+
+        logger.info('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'
+                    .format('', self.total_tp, self.total_fp, self.total_fn, self.pr(), self.re(), self.f1()))
 
         self.last_f1 = self.f1()
         if self.last_f1 > self.max_f1:
             self.max_f1 = self.last_f1
             self.max_iter = self.iter
         stall = self.iter - self.max_iter
-        
-        print("EVAL-REL-C2M\t{}-{}*\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}".format(dataset_name, self.task, self.iter, self.last_f1, self.max_iter, self.max_f1, stall))
 
+        logger.info('EVAL-REL-C2M\t{}-{}*\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}'
+                    .format(dataset_name, self.task, self.iter, self.last_f1, self.max_iter, self.max_f1, stall))
 
     def pr(self):
         return self.total_tp / (self.total_tp + self.total_fp) if self.total_tp != 0 else 0.0
@@ -189,9 +180,7 @@ class MetricConceptRelationToMentionsF1:
     def f1(self):
         return 2 * self.total_tp / (2 * self.total_tp + self.total_fp + self.total_fn) if self.total_tp != 0 else 0.0
 
-
     def log(self, tb_logger, dataset_name):
-        # tb_logger.log_value('{}/{}-tomention-f1'.format(dataset_name, self.task), self.last_f1, self.iter)
         tb_logger.log_value('metrics/{}-tomention-f1'.format(self.task), self.last_f1, self.iter)
 
 
@@ -207,9 +196,9 @@ class MetricSpanRelationF1x:
         self.verbose = verbose
 
     def step(self):
-        self.tps = { l:0 for l in self.labels}
-        self.fps = { l:0 for l in self.labels}
-        self.fns = { l:0 for l in self.labels}
+        self.tps = {l: 0 for l in self.labels}
+        self.fps = {l: 0 for l in self.labels}
+        self.fns = {l: 0 for l in self.labels}
         self.total_tp = 0
         self.total_fp = 0
         self.total_fn = 0
@@ -230,29 +219,31 @@ class MetricSpanRelationF1x:
             self.total_fn += 1
 
     def update2(self, args, metadata={}):
-        for batch, (pred, gold, identifier, tokens) in enumerate(zip(args['span-rel-pred'], args['span-rel-gold'], metadata['identifiers'], metadata['tokens'])):
+        for batch, (pred, gold, identifier, tokens) in enumerate(
+                zip(args['span-rel-pred'], args['span-rel-gold'], metadata['identifiers'], metadata['tokens'])):
             self.add(pred, gold)
-
 
     def print(self, dataset_name, details=False):
         for label in self.labels:
             tp, fp, fn = self.tps[label], self.fps[label], self.fns[label]
             pr = tp / (tp + fp) if tp != 0 else 0.0
             re = tp / (tp + fn) if tp != 0 else 0.0
-            f1 = 2*tp / (2*tp + fp +fn) if tp != 0 else 0.0
+            f1 = 2 * tp / (2 * tp + fp + fn) if tp != 0 else 0.0
             if self.verbose:
-                print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format(label, tp, fp, fn, pr, re, f1))
-        
-        print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format('', self.total_tp, self.total_fp, self.total_fn, self.pr(), self.re(), self.f1()))
+                logger.debug('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'
+                             .format(label, tp, fp, fn, pr, re, f1))
+
+        logger.info('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'
+                    .format('', self.total_tp, self.total_fp, self.total_fn, self.pr(), self.re(), self.f1()))
 
         self.last_f1 = self.f1()
         if self.last_f1 > self.max_f1:
             self.max_f1 = self.last_f1
             self.max_iter = self.iter
         stall = self.iter - self.max_iter
-        
-        print("EVAL-REL-SPAN\t{}-{}*\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}".format(dataset_name, self.task, self.iter, self.last_f1, self.max_iter, self.max_f1, stall))
 
+        logger.info('EVAL-REL-SPAN\t{}-{}*\tcurr-iter: {}\tcurr-f1: {}\tmax-iter: {}\tmax-f1: {}\tstall: {}'
+                    .format(dataset_name, self.task, self.iter, self.last_f1, self.max_iter, self.max_f1, stall))
 
     def pr(self):
         return self.total_tp / (self.total_tp + self.total_fp) if self.total_tp != 0 else 0.0
@@ -262,7 +253,6 @@ class MetricSpanRelationF1x:
 
     def f1(self):
         return 2 * self.total_tp / (2 * self.total_tp + self.total_fp + self.total_fn) if self.total_tp != 0 else 0.0
-
 
     def log(self, tb_logger, dataset_name):
         # tb_logger.log_value('{}/{}-f1'.format(dataset_name, self.task), self.last_f1, self.iter)
