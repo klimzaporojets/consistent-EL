@@ -49,12 +49,6 @@ if __name__ == "__main__":
     assert len(res) == len(loaded_predicted_test)
     loaded_gold_test = {s: loaded_gold_test[s] for s in res}
     assert len(loaded_gold_test) == len(loaded_predicted_test)
-    # if len(loaded_gold_test) != len(loaded_predicted_test):
-    #     msg_error = 'ERROR: differences between predicted (%s) and gold (%s) ' \
-    #                 'for follwing dir: %s' % \
-    #                 (len(loaded_predicted_test), len(loaded_gold_test), predicted_path)
-    #     logger.error(msg_error)
-    #     raise RuntimeError(msg_error)
 
     for idx, identifier in enumerate(loaded_gold_test.keys()):
         cpn_evaluator.add(loaded_predicted_test[identifier], loaded_gold_test[identifier])

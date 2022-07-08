@@ -181,4 +181,3 @@ class MetricLinkAccuracyNoCandidates:
     def log(self, tb_logger, dataset_name):
         acc = self.numer / self.denom if self.numer != 0 else 0.0
         tb_logger.log_value('metrics-{}/{}'.format(self.task, 'acc-no-candidates'), acc, self.epoch)
-        # return

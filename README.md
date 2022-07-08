@@ -1,4 +1,4 @@
-# Towards Consistent Document-level Entity Linking:Joint Models for Entity Linking and Coreference Resolution
+# Towards Consistent Document-Level Entity Linking: Joint Models for Entity Linking and Coreference Resolution
 This repository contains the code, 
 dataset, and models for the following paper accepted to ACL 2022 (oral presentation): 
 ```
@@ -35,7 +35,7 @@ pip install -r requirements.txt
 Install pytorch that corresponds to your cuda version. The default pytorch installation command is: 
 
 ```
-pip3 install torch torchvision torchaudio
+pip install torch torchvision torchaudio
 ```
 
 
@@ -137,7 +137,7 @@ Alternatively, the following scripts allows to train only a single model per arc
  ./scripts/train_once.sh
  ```
 
-## Predicting using previously saved model
+## Predicting Using Previously Saved Model
 As mentioned above (see __Training__), the trained models are saved into ```stored_models```
 inside each of the experiment directories. These models can be loaded and used to 
 evaluate a given dataset using ```src/evaluate.py``` script. For example:   
@@ -152,7 +152,7 @@ will use the model stored in ```--model_path``` to predict on the subsets listed
 inside ```trainer.evaluate``` of ```--config_file```, and save the predictions
 in ```output_path``` subdirectory. 
 
-## Evaluating the predictions
+## Evaluating the Predictions
 We evaluate the predictions using the following metrics: 
 1. __Entity Linking mention-based (ELm) F1:__ counts a true positive if the mention boundaries and the mention link 
 is correctly predicted.  
@@ -163,7 +163,7 @@ monly used MUC ([Vilain et al., 1995](https://doi.org/10.3115/1072399.1072405)),
 B-cubed ([Bagga and Baldwin, 1998](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.47.5848&rep=rep1&type=pdf)) 
 and CEAFe ([Luo, 2005](https://www.aclweb.org/anthology/H05-1004/)).           
 
-### Single prediction evaluation
+### Single Prediction Evaluation
 The most basic evaluation setup consists in 
 evaluating the predictions made by a particular model for a specific subset using the following command: 
 ```
@@ -186,12 +186,39 @@ PYTHONPATH=src/ python -u src/stats/results/main_linker_results_single.py \
     --ground_truth_path data/dwie/plain_format/data/annos_with_content/
 ``` 
 
-### All-inclusive evaluation 
-Furthermore, we provide a script to evaluate multiple models 
-at once with different trained models per evaluation setup. 
-As a result, a table similar to Table 2 in the paper is obtained. 
-
-__WORK IN PROGRESS__
+### All-Inclusive Evaluation 
+Furthermore, we provide ```src/stats/results/main_linker_results_table.py``` 
+script to evaluate multiple models at once with different trained models per evaluation setup. 
+As a result, a table similar to Table 2 in [our paper](https://arxiv.org/pdf/2108.13530.pdf) is generated. 
+The following is an example: 
+```
+PYTHONPATH=src/ python -u src/stats/results/main_linker_results_table.py \
+    --config_file experiments/evaluate_config.json
+``` 
+Where ```experiments/evaluate_config.json``` is the configuration file containing 
+the paths to the experimental runs (for each of the architectural setups) to be evaluated 
+(see the provided example). The following are the most important elements in this file: 
+1. __datasets:__ a list of the datasets to evaluate on with the corresponding paths to ground truth annotations. 
+2. __setups:__ a list of architectural setups to evaluate. In the paper we evaluate three of these setups: 
+_Standalone_ (separate for coreference and entity linking tasks), _Local_ (joint coreference and entity linking), 
+and _Global_ (joint coreference and entity linking). 
+3. __predictions:__ the details on the predictions made using the models from each of the training __runs__. 
+4. __runs:__ the paths to the directories where the predictions of each of the trained models for a particular
+setup and dataset (e.g., obtained by by running ```./train_all.sh``` script) 
+were saved. The reported metric is the average of the calculated metrics for 
+the predictions in each of the runs. 
 
 ## Standalone Execution
+We also provide possibility to deploy REST API service. 
 __WORK IN PROGRESS__
+
+## Contact
+If you have questions, please e-mail us at <klim.zaporojets@ugent.be>.
+
+## Acknowledgements
+Part of the research leading to DWIE dataset has received funding from 
+(i) the European Union’s Horizon
+2020 research and innovation programme under grant agreement no. 761488 for 
+the [CPN project](https://www.projectcpn.eu/), and
+(ii) the Flemish Government under the "Onderzoeksprogramma Artificiële Intelligentie (AI) Vlaanderen"
+programme.

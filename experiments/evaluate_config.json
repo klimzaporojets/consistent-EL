@@ -3,17 +3,14 @@
   "datasets": [
     {
       "dataset": "DWIE",
-      "_ground_truth_path": "data/dwie/spanbert_format/dwie_bert_s384/",
       "ground_truth_path": "data/dwie/plain_format/data/annos_with_content/"
     },
     {
       "dataset": "AIDA(a)+",
-      "_ground_truth_path": "data/aida+/spanbert_format/testa/",
       "ground_truth_path": "data/aida+/plain/testa/"
     },
     {
       "dataset": "AIDA(b)+",
-      "_ground_truth_path": "data/aida+/spanbert_format/testb/",
       "ground_truth_path": "data/aida+/plain/testb/"
     }
   ],
@@ -26,8 +23,9 @@
       "predictions": [
         {
           "dataset": "AIDA(a)+",
+          "subset_tag": "testa",
           "path": "predictions/testa/testa.jsonl",
-          "experiments": [
+          "runs": [
             "aida-standalone-linking/e1",
             "aida-standalone-linking/e2",
             "aida-standalone-linking/e3",
@@ -37,8 +35,9 @@
         },
         {
           "dataset": "AIDA(b)+",
+          "subset_tag": "testb",
           "path": "predictions/testb/testb.jsonl",
-          "experiments": [
+          "runs": [
             "aida-standalone-linking/e1",
             "aida-standalone-linking/e2",
             "aida-standalone-linking/e3",
@@ -48,8 +47,9 @@
         },
         {
           "dataset": "DWIE",
+          "subset_tag": "test",
           "path": "predictions/test/test.jsonl",
-          "experiments": [
+          "runs": [
             "dwie-standalone-linking/e1",
             "dwie-standalone-linking/e2",
             "dwie-standalone-linking/e3",
@@ -67,8 +67,9 @@
       "predictions": [
         {
           "dataset": "AIDA(a)+",
+          "subset_tag": "testa",
           "path": "predictions/testa/testa.jsonl",
-          "experiments": [
+          "runs": [
             "aida-standalone-coreference/e1",
             "aida-standalone-coreference/e2",
             "aida-standalone-coreference/e3",
@@ -78,8 +79,9 @@
         },
         {
           "dataset": "AIDA(b)+",
+          "subset_tag": "testb",
           "path": "predictions/testb/testb.jsonl",
-          "experiments": [
+          "runs": [
             "aida-standalone-coreference/e1",
             "aida-standalone-coreference/e2",
             "aida-standalone-coreference/e3",
@@ -89,8 +91,9 @@
         },
         {
           "dataset": "DWIE",
-          "path": "predictions/testb/testb.jsonl",
-          "experiments": [
+          "subset_tag": "test",
+          "path": "predictions/test/test.jsonl",
+          "runs": [
             "dwie-standalone-coreference/e1",
             "dwie-standalone-coreference/e2",
             "dwie-standalone-coreference/e3",
@@ -109,8 +112,9 @@
       "predictions": [
         {
           "dataset": "AIDA(a)+",
+          "subset_tag": "testa",
           "path": "predictions/testa/testa.jsonl",
-          "experiments": [
+          "runs": [
             "aida-local/e1",
             "aida-local/e2",
             "aida-local/e3",
@@ -120,8 +124,9 @@
         },
         {
           "dataset": "AIDA(b)+",
+          "subset_tag": "testb",
           "path": "predictions/testb/testb.jsonl",
-          "experiments": [
+          "runs": [
             "aida-local/e1",
             "aida-local/e2",
             "aida-local/e3",
@@ -131,8 +136,9 @@
         },
         {
           "dataset": "DWIE",
-          "path": "predictions/testb/testb.jsonl",
-          "experiments": [
+          "subset_tag": "test",
+          "path": "predictions/test/test.jsonl",
+          "runs": [
             "dwie-local/e1",
             "dwie-local/e2",
             "dwie-local/e3",
@@ -152,7 +158,8 @@
         {
           "dataset": "AIDA(a)+",
           "path": "predictions/testa/testa.jsonl",
-          "experiments": [
+          "subset_tag": "testa",
+          "runs": [
             "aida-global/e1",
             "aida-global/e2",
             "aida-global/e3",
@@ -163,7 +170,8 @@
         {
           "dataset": "AIDA(b)+",
           "path": "predictions/testb/testb.jsonl",
-          "experiments": [
+          "subset_tag": "testb",
+          "runs": [
             "aida-global/e1",
             "aida-global/e2",
             "aida-global/e3",
@@ -173,8 +181,9 @@
         },
         {
           "dataset": "DWIE",
-          "path": "predictions/testb/testb.jsonl",
-          "experiments": [
+          "path": "predictions/test/test.jsonl",
+          "subset_tag": "test",
+          "runs": [
             "dwie-global/e1",
             "dwie-global/e2",
             "dwie-global/e3",
