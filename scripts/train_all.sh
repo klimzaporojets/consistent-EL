@@ -5,7 +5,7 @@
 # experiment 1: training with random seed initialization
 mkdir experiments/aida-standalone-linking/e1/
 python -u src/train.py \
-experiments/aida-standalone-linking/config.json \
+--config_file experiments/aida-standalone-linking/config.json \
 --output_path experiments/aida-standalone-linking/e1/ 2>&1 | tee experiments/aida-standalone-linking/e1/output_train.log
 
 # experiment 2: training with random seed initialization
