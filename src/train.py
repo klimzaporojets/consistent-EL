@@ -419,7 +419,6 @@ if __name__ == '__main__':
     commit_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip()
     commit_hash = commit_hash.decode('utf-8')
 
-    # dump_path = os.path.dirname(args.config_file)
     dump_path = args.output_path
     json.dump({'commit_id': commit_hash}, open(os.path.join(dump_path, 'commit_info.json'), 'w'))
 

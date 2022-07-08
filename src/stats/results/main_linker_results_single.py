@@ -3,11 +3,31 @@ import logging
 import os
 
 from misc.cpn_eval import load_jsonl, EvaluatorCPN, load_json
-from stats.results.utils.print_results_tables import print_single_result
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 logger = logging.getLogger()
+
+
+def print_single_result(task_to_metrics: Dict):
+    """
+
+    :param task_to_metrics:
+    :return:
+
+    Metrics to print for entity linking:
+        1- links-links-hard (F1)
+        2- links-links-from-ents (F1)
+
+    Metrics to print for coreference resolution:
+        1- Avg. F1
+    """
+    print('{:<10}{:<10}{:<20}'.format('ELm (F1)', 'ELh (F1)', 'Coref (Avg. F1)'))
+    print('{:<10}{:<10}{:<20}'.format(
+        '{:.3f}'.format(task_to_metrics['links']['links-links-from-ents']['f1']),
+        '{:.3f}'.format(task_to_metrics['links']['links-links-hard']['f1']),
+        '{:.3f}'.format(task_to_metrics['coref']['avg']['f1'])))
+
 
 if __name__ == "__main__":
 
@@ -22,7 +42,6 @@ if __name__ == "__main__":
                         # , default='data/aida+/plain/testa/'
                         , default='data/dwie/plain_format/data/annos_with_content/'
                         , help='configuration file')
-
 
     args = parser.parse_args()
 

@@ -40,7 +40,6 @@ def predict_scores(scores, linker_spans, linker_candidates, candidate_lengths, l
     return output
 
 
-# def predict_scores_mtt(scores, linker_spans, linker_candidates, candidate_lengths, labels):
 def predict_scores_mtt(scores, linker_spans, linker_candidates, candidate_lengths, entity_dictionary: Dictionary):
     """
     Used by linkers
