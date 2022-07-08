@@ -2,7 +2,6 @@ import json
 import logging
 
 import torch
-# from data.dataset import create_datasets
 from transformers import BertTokenizer
 
 from data_processing.dictionary import Dictionary
@@ -19,8 +18,6 @@ def load_dictionary(config, path):
     filename = filename if ('/' in filename) else '{}/{}'.format(path, filename)
     logger.debug('load_dictionary of config %s and path %s and filename %s' % (config, path, filename))
     if type == 'word2vec':
-        # logger.info('init {} with {}'.format(path, filename))
-        # dictionary = Dictionary(filename)
         dictionary = Dictionary()
     elif type == 'spirit':
         dictionary = Dictionary()
@@ -30,7 +27,6 @@ def load_dictionary(config, path):
         dictionary.load_wordpiece_vocab(filename)
     elif type == 'json':
         dictionary = Dictionary()
-        # dictionary.load_json(config['filename'])
         dictionary.load_json(filename)
     elif type == 'bert':
         dictionary = BertTokenizer.from_pretrained(config['filename'])
@@ -41,7 +37,6 @@ def load_dictionary(config, path):
 
 
 def create_linking_candidates(config, entity_dictionary: Dictionary):
-    # print('STARTING LOADING LINKING CANDIDATES')
     candidates_path = config['file']
     max_link_candidates = config['max_link_candidates']
     span_text_to_candidates = dict()
@@ -178,7 +173,6 @@ def create_model(config, dictionaries):
     for key, param in dict(model.named_parameters()).items():
         for initializer in [y for x, y in init_cfg.items() if x in key]:
             if initializer == 'orthogonal':
-                # is this correct for RNNs, don't think so ?
                 logger.debug('ORTHOGONAL %s %s' % (key, param.data.size()))
                 torch.nn.init.orthogonal_(param.data)
             elif initializer == 'rnn-orthogonal':

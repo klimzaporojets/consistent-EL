@@ -4,16 +4,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from models.misc.entity_embeddings import KolitsasEntityEmbeddings
+from models.misc.misc import batched_index_select
+from models.misc.text_field import TextFieldEmbedderTokens
 from models.models.scorers import OptFFpairsCorefLinkerNaive, OptFFpairsCorefLinkerBase, \
     OptFFpairsCorefLinkerBaseHoi
-from models.misc.misc import batched_index_select
 from models.utils.misc import MyGate, filter_spans, coref_add_scores_coreflinker, overwrite_spans_hoi
-from models.misc.entity_embeddings import KolitsasEntityEmbeddings
-from models.misc.text_field import TextFieldEmbedderTokens
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 logger = logging.getLogger()
+
 
 class ModuleCorefLinkerPropE2EHoi(nn.Module):
     def __init__(self, dim_span, coref_pruner, span_pair_generator, config, dictionaries):

@@ -1,18 +1,18 @@
 import torch
 import torch.nn as nn
 
-from misc import settings
 from metrics.coref import MetricCoref, MetricCorefAverage
 from metrics.corefx import MetricCorefExternal
 from metrics.linker import MetricLinkerImproved, MetricLinkAccuracy, MetricLinkAccuracyNoCandidates
 from metrics.misc import MetricObjective
-# from modules.tasks.linker import predict_scores
+from misc import settings
 from models.misc.misc import batched_index_select
-from models.models.coreflinker_loss import create_candidate_mask, create_coreflinker_target_forward, decode_m2i_coreflinker, \
+from models.models.coreflinker_loss import create_candidate_mask, create_coreflinker_target_forward, \
+    decode_m2i_coreflinker, \
     convert_coref, m2i_to_clusters_linkercoref, remove_disabled_spans, remove_disabled_spans_linking, \
     remove_disabled_scores_coref, remove_disabled_scores_linking, predict_scores_coref, remove_singletons_without_link
-from models.utils.misc import predict_scores, get_mask_from_sequence_lengths
 from models.utils.math import logsumexp
+from models.utils.misc import predict_scores, get_mask_from_sequence_lengths
 
 
 class CorefLinkerLossHoi(nn.Module):
@@ -48,7 +48,6 @@ class CorefLinkerLossHoi(nn.Module):
         output_linking = {}
 
         if self.enabled and scores is not None:
-            # pred_spans = filtered_spans['spans']
             pred_spans = filtered_spans['pruned_spans']
 
             linker_candidates = linker['candidates']
@@ -58,7 +57,6 @@ class CorefLinkerLossHoi(nn.Module):
             if self.end_to_end:
                 # if it is end-to-end, we only select the candidates pruned by pruner in order to avoid
                 #   using too much memory
-                # pred_spans_idx = filtered_spans['prune_indices']
                 pred_spans_idx = filtered_spans['prune_indices_hoi']
             else:
                 pred_spans_idx = filtered_spans['reindex_wrt_gold']
@@ -69,7 +67,6 @@ class CorefLinkerLossHoi(nn.Module):
             candidates = linker_candidates.to(scores.device)  # torch.Size([1, 9, 17])
 
             nill_id = self.entity_dictionary.lookup('NILL')
-            # none_id = self.entity_dictionary.lookup('NONE')
 
             linker_mask = create_candidate_mask(candidates.size(-1), candidate_lengths).float().to(scores.device)
 
@@ -113,7 +110,7 @@ class CorefLinkerLossHoi(nn.Module):
                 mask = get_mask_from_sequence_lengths(lengths_coref, lengths_coref.max().item()).float()
                 output['loss'] = self.weight * (mask * loss).sum()
             elif not api_call:  # when api call is performed (e.g. with only text), we do not get the gold annotation
-                raise BaseException("HUH")
+                raise BaseException('HUH')
             else:
                 output['loss'] = 0.0
 
@@ -212,7 +209,6 @@ class CorefLinkerLossHoi(nn.Module):
                 # for loss just copies the loss from output for both linker and coref ; this 'loss' is needed when
                 # later evaluating in metrics.misc.MetricObjective#update2 for example (see below when adding metrics
                 # in create_metrics(self) method)
-
                 if self.filter_singletons_with_pruner:
                     if not self.filter_only_singletons:
                         # this assumes that pruner is able to predict spans
@@ -222,7 +218,6 @@ class CorefLinkerLossHoi(nn.Module):
                         output_coref['scores'] = remove_disabled_scores_coref(output_coref['scores'], coref_flat)
                         output_linking['scores'] = remove_disabled_scores_linking(output_linking['scores'], coref_flat)
                     else:
-                        # output_coref['pred'] = remove_disabled_spans(output_coref['pred'], pruner_spans)
                         output_coref['pred'] = remove_singletons_without_link(output_coref['pred'],
                                                                               output_linking['pred'],
                                                                               pruner_spans)
@@ -230,7 +225,6 @@ class CorefLinkerLossHoi(nn.Module):
                         output_linking['pred'] = remove_disabled_spans_linking(output_linking['pred'], coref_flat)
                         output_coref['scores'] = remove_disabled_scores_coref(output_coref['scores'], coref_flat)
                         output_linking['scores'] = remove_disabled_scores_linking(output_linking['scores'], coref_flat)
-
 
                 if self.filter_singletons_with_matrix:
                     coref_flat = [{item for sublist in batch for item in sublist} for batch in output_coref['pred']]

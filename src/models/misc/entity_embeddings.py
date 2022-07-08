@@ -40,22 +40,18 @@ class KolitsasEntityEmbeddings(nn.Module):
                 wiki_id = int(sp[1])
                 wiki_link = sp[0].strip()
                 wiki_link = wiki_link.replace(' ', '_')
-                # if "ul_Piatra_Neam" in wiki_link:
-                #     print('paused to debug, checking this')
                 if wiki_link not in self.dictionary.word2idx:
                     continue
                 to_ret[wiki_id] = wiki_link
         return to_ret
 
-    def load_kolitsas_wiki_id_to_wiki_link_universe(self, entities_universe_file,
-                                                    wiki_id_to_wiki_link):
+    def load_kolitsas_wiki_id_to_wiki_link_universe(self, entities_universe_file, wiki_id_to_wiki_link):
         with open(entities_universe_file) as infile:
             for line in infile:
                 sp = line.split('\t')
                 assert len(sp) == 2
                 wiki_id = int(sp[0])
                 wiki_link = sp[1].strip()
-                # wiki_link = wiki_link.replace(' ', '_')
                 if wiki_link not in self.dictionary.word2idx:
                     continue
                 if wiki_id in wiki_id_to_wiki_link:
@@ -73,7 +69,6 @@ class KolitsasEntityEmbeddings(nn.Module):
         logger.debug('kolitsas emb used mem 1: %s' % (process.memory_info().rss / 1024 / 1024 / 1024))
 
         entity_embeddings_nparray[0] = 0
-        # if hasattr(args, 'entity_extension') and args.entity_extension is not None:
         ent_id_to_wiki_id = dict()
         ent_id_to_wiki_id = self.load_kolitsas_ent_id_to_wiki_id(self.ent_id_to_wiki_id_file, ent_id_to_wiki_id,
                                                                  offset=0)
@@ -91,8 +86,6 @@ class KolitsasEntityEmbeddings(nn.Module):
                                                                      offset=len(ent_id_to_wiki_id))
 
             logger.debug('kolitsas emb used mem 4: %s' % (process.memory_info().rss / 1024 / 1024 / 1024))
-            # entity_extension = np.load(config.base_folder + "data/entities/" + args.entity_extension +
-            #                            "/ent_vecs/ent_vecs.npy")
             entity_embeddings_nparray = np.vstack((entity_embeddings_nparray, entity_extension))
             logger.debug('kolitsas emb used mem 5: %s' % (process.memory_info().rss / 1024 / 1024 / 1024))
 
@@ -115,13 +108,7 @@ class KolitsasEntityEmbeddings(nn.Module):
             wiki_link = None
             if wiki_id in wiki_id_to_wiki_link:
                 wiki_link = wiki_id_to_wiki_link[wiki_id]
-            # else:
-            #     print('WARN: no wiki id for ', idx)
-            # print('idx: ', idx, ' wiki_id: ', wiki_id, ' wiki_link: ', wiki_link)
             if wiki_link in accept:
-                # if "ul_Piatra_Neam" in wiki_link:
-                #     print('paused 2 to debug, checking this')
-                # print('wiki link in dictionary: ', wiki_link)
                 found[accept[wiki_link]] = entity_embedding
 
         logger.debug('kolitsas emb used mem 8: %s' % (process.memory_info().rss / 1024 / 1024 / 1024))
@@ -136,7 +123,6 @@ class KolitsasEntityEmbeddings(nn.Module):
 
         logger.debug('kolitsas emb used mem 9: %s' % (process.memory_info().rss / 1024 / 1024 / 1024))
 
-        # print('nr of lines in file: ', nr_lines_file)
         logger.info('shape of all_embeddings: %s' % str(all_embeddings.shape))
         embeddings_mean = np.mean(all_embeddings)
         embeddings_std = np.std(all_embeddings)
@@ -192,7 +178,7 @@ class KolitsasEntityEmbeddings(nn.Module):
         self.refit_ratio = config['refit_ratio']
         self.norm_clip = config['norm_clip']
 
-        self.load_embeddings(0)
+        self.load_embeddings()
 
         if self.dictionary.size == 0:
             logger.warning('WARNING: empty dictionary')
@@ -201,15 +187,15 @@ class KolitsasEntityEmbeddings(nn.Module):
         nrms = self.embed.weight.norm(p=2, dim=1, keepdim=True)
         logger.info('norms: min={} max={} avg={}'.format(nrms.min().item(), nrms.max().item(), nrms.mean().item()))
 
-    def load_embeddings(self, retry=0):
+    def load_embeddings(self):
         process = psutil.Process(os.getpid())
 
         logger.debug('starting loading kolitsas entity embeddings, used memory: %s' %
-                    (process.memory_info().rss / 1024 / 1024 / 1024))
+                     (process.memory_info().rss / 1024 / 1024 / 1024))
         entity_embeddings = self.load_kolitsas_embeddings_random_unknowns()
 
         logger.debug('starting loading kolitsas entity embeddings, used memory: %s' %
-                    (process.memory_info().rss / 1024 / 1024 / 1024))
+                     (process.memory_info().rss / 1024 / 1024 / 1024))
 
         if self.normalize:
             norms = np.einsum('ij,ij->i', entity_embeddings, entity_embeddings)

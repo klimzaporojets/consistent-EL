@@ -20,7 +20,7 @@ def predict(model, datasets, config):
     device = torch.device(settings.device)
     model = model.to(device)
 
-    collate_fn = model.collate_func(datasets, device)
+    collate_fn = model.collate_func()
     batch_size = config['optimizer']['batch_size']
 
     model.load_model(config['model_path'])
@@ -61,12 +61,7 @@ def load_model(config, training=False, load_datasets_from_config=True):
     """
 
     dictionaries = create_dictionaries(config, training)
-    linking_candidates = None
     datasets = None
-    if 'linking_candidates' in config:
-        # this also adds respective entries to the dictionary
-        linking_candidates = create_linking_candidates(config['linking_candidates'], dictionaries['entities'])
-        # create_linking_candidates(config['linking_candidates'], dictionaries['entities'])
 
     # BEGIN - leaves in config only the dataset for which the evaluation is in true
     evaluate_datasets = set(config['trainer']['evaluate'])
@@ -82,16 +77,14 @@ def load_model(config, training=False, load_datasets_from_config=True):
     # END - leaves in config only the dataset for which the evaluation is in true
 
     if load_datasets_from_config:
-        datasets, data, evaluate = create_datasets(config, dictionaries, linking_candidates)
+        datasets, data, evaluate = create_datasets(config, dictionaries)
     model, parameters = create_model(config, dictionaries)
 
-    # return model, parameters, linking_candidates, dictionaries
     to_ret = {
         'dictionaries': dictionaries,
         'datasets': datasets,
         'model': model,
-        'parameters': parameters,
-        'linking_candidates': linking_candidates
+        'parameters': parameters
     }
     return to_ret
 

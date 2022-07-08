@@ -414,7 +414,7 @@ class BertProcessor(object):
                     if subt_t2 - subt_t1 == m_subt_t2 - m_subt_t1:
                         spans_data.append(((m_subt_t1, m_subt_t2), cands, scores_cands))
                     else:
-                        # TODO: SHOULD I IGNORE THIS???
+                        # TODO: SHOULD WE IGNORE THIS???
                         spans_data.append(((m_subt_t1, m_subt_t2), cands, scores_cands))
                         # logger.warning('FOLLOWING SPAN across segments: ' + str(bert_doc.subtokens[subt_t1:subt_t2 + 1]))
 
@@ -516,12 +516,9 @@ if __name__ == '__main__':
                         # default='data/local_tests/dwie-original-1',
                         help='Input directory that contains DWIE files')
     parser.add_argument('--output_dir', type=str, default='data/dwie/spanbert_format/',
-                        # parser.add_argument('--output_dir', type=str, default='data/local_tests/data-bert-1',
-                        # parser.add_argument('--output_dir', type=str, default='data/local_tests/data-bert',
                         help='Output directory')
     parser.add_argument('--output_dir_hoi', type=str, default='data/dwie/spanbert_format_hoi/',
                         help='Output directory')
-    # parser.add_argument('--span_to_candidate_links_path', type=str,
     parser.add_argument('--alias_table_path', type=str,
                         default='data/dwie/dwie-alias-table/dwie-alias-table.json',
                         help='Path to alias file that contains spans to candidate list. ')

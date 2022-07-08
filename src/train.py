@@ -18,7 +18,7 @@ from data_processing.dataset import create_datasets
 from data_processing.dictionary import Dictionary
 from misc import settings
 from models import CoreflinkerSpanBertHoi
-from models.misc.linker import create_dictionaries, create_model, create_linking_candidates
+from models.misc.linker import create_dictionaries, create_model
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
@@ -28,7 +28,7 @@ logger = logging.getLogger()
 def do_evaluate(model, dataset, metrics, batch_size, filename=None, tb_logger=None, epoch=-1,
                 config=None):
     device = torch.device(settings.device)
-    collate_fn = model.collate_func(datasets, device)
+    collate_fn = model.collate_func()
 
     loader = DataLoader(dataset, collate_fn=collate_fn, batch_size=batch_size, shuffle=False)
     name = dataset.name
@@ -68,8 +68,8 @@ def do_evaluate(model, dataset, metrics, batch_size, filename=None, tb_logger=No
     tb_logger.log_value('loss/', total_obj, epoch)
 
     for m in metrics:
-        m.print(name, True)
-        m.log(tb_logger, name)
+        m.print(name)
+        m.log(tb_logger)
 
     logging.info('%s-avg-loss: %s' % (name, total_obj / (len(loader) + 1e-7)))
 
@@ -79,9 +79,8 @@ def do_evaluate(model, dataset, metrics, batch_size, filename=None, tb_logger=No
         model.log_stats(name, tb_logger, epoch)
 
 
-def do_evaluate_only_loss(model, dataset, metrics, batch_size, filename=None, tb_logger=None, epoch=-1, config=None):
-    device = torch.device(settings.device)
-    collate_fn = model.collate_func(datasets, device)
+def do_evaluate_only_loss(model, dataset, batch_size, tb_logger=None, epoch=-1):
+    collate_fn = model.collate_func()
 
     loader = DataLoader(dataset, collate_fn=collate_fn, batch_size=batch_size, shuffle=False)
     name = dataset.name
@@ -110,7 +109,7 @@ def do_evaluate_only_loss(model, dataset, metrics, batch_size, filename=None, tb
 
 
 class Runner:
-    def __init__(self, config, seed=None):
+    def __init__(self, config):
         self.config = config
         self.bert_train_steps = config['lr-scheduler']['nr_iters_bert_training']
 
@@ -183,7 +182,7 @@ class Runner:
         ]
         return schedulers
 
-    def train_spanbert(self, model: CoreflinkerSpanBertHoi, datasets, parameters):
+    def train_spanbert(self, model: CoreflinkerSpanBertHoi, datasets):
         logging.info('CURRENT settings.device VALUE IS: %s' % settings.device)
         logging.info('TRAINING, PLEASE WAIT...')
         conf = self.config
@@ -195,7 +194,7 @@ class Runner:
         device_name = settings.device
         device = torch.device(device_name)
         model = model.to(device)
-        collate_fn = model.collate_func(datasets, device)
+        collate_fn = model.collate_func()
         train = DataLoader(datasets[conf['trainer']['train']], collate_fn=collate_fn, batch_size=batch_size,
                            shuffle=True)
 
@@ -360,8 +359,7 @@ class Runner:
                                     epo, config=conf)
                     elif evaluate_only_loss:
                         tb_logger_evaluate = tb_loggers[name]
-                        do_evaluate_only_loss(model, datasets[name], metrics[name], batch_size, predict_file,
-                                              tb_logger_evaluate, epo)
+                        do_evaluate_only_loss(model, datasets[name], batch_size, tb_logger_evaluate, epo)
 
         while True:
             try:
@@ -388,23 +386,17 @@ def load_model(config, training=False, load_datasets_from_config=True):
     """
 
     dictionaries = create_dictionaries(config, training)
-    linking_candidates = None
     datasets = None
-    if 'linking_candidates' in config:
-        # this also adds respective entries to the dictionary
-        linking_candidates = create_linking_candidates(config['linking_candidates'], dictionaries['entities'])
-        # create_linking_candidates(config['linking_candidates'], dictionaries['entities'])
+
     if load_datasets_from_config:
-        datasets, data, evaluate = create_datasets(config, dictionaries, linking_candidates)
+        datasets, data, evaluate = create_datasets(config, dictionaries)
     model, parameters = create_model(config, dictionaries)
 
-    # return model, parameters, linking_candidates, dictionaries
     to_ret = {
         'dictionaries': dictionaries,
         'datasets': datasets,
         'model': model,
-        'parameters': parameters,
-        'linking_candidates': linking_candidates
+        'parameters': parameters
     }
     return to_ret
 
@@ -456,7 +448,7 @@ if __name__ == '__main__':
 
     if config['trainer']['version'] == 'spanbert':
         runner = Runner(config=config)
-        runner.train_spanbert(model, datasets, config)
+        runner.train_spanbert(model, datasets)
     else:
         raise RuntimeError('no implementation for the following trainer version: ' +
                            config['trainer']['version'])

@@ -40,6 +40,7 @@ class TokenizerCPN:
                 all_tokens_data.append({'tokid_begin_char': tokp.idx + 5, 'tokid_end_char': tokp.idx + 9,
                                         'tok_id': tok_id, 'tok_text': tok3})
                 tok_id += 1
+
             # this particular case happens when date (year for example) is finished in 's', ex: 1980s, 90s, etc.
             # it has to be parsed as two different tokens (ex: ['1980', 's']), with spacy version it gets parsed
             # as single token which produces difference in scores with Johannes version later on
@@ -54,6 +55,7 @@ class TokenizerCPN:
                                         'tokid_end_char': tokp.idx + len(str(tokp)),
                                         'tok_id': tok_id, 'tok_text': tok2})
                 tok_id += 1
+
             # this particular case happens when there is a dot after month, sometimes spacy doesn't separate the
             # dot from the month, ex 'May.' gets parsed as ['May.'] and not ['May','.']
             elif len(found_dot_after_month) == 1 and len(found_dot_after_month[0][0]) == len(str(tokp)):

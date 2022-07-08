@@ -25,8 +25,6 @@ def mst_with_tree(scores, lengths, mask):
     for b, nodes in enumerate(lengths):
         if nodes > 0:
             curr_mask = mask[b, :, :].cpu()
-            # s = scores[b, :, :].cpu().tolist()
-            # G = encode_graph_mtt(s, nodes, curr_mask)
             G = encode_graph_mtt_indexed(scores[b, :, :], curr_mask)
             tree = nx.maximum_spanning_arborescence(G)
             decode_tree(T[b, :, :], tree)
@@ -39,11 +37,8 @@ def mst_only_tree(scores, lengths, mask):
     for b, nodes in enumerate(lengths):
         if nodes > 0:
             curr_mask = mask[b, :, :].cpu()
-            # s = scores[b, :, :].cpu().tolist()
-            # G = encode_graph_mtt(s, nodes, curr_mask)
             G = encode_graph_mtt_indexed(scores[b, :, :], curr_mask)
             tree = nx.maximum_spanning_arborescence(G)
-            # decode_tree(T[b, :, :], tree)
             tree_lst.append(tree)
     return tree_lst
 
@@ -53,13 +48,8 @@ def mst_only_branches(scores, lengths, mask):
     for b, nodes in enumerate(lengths):
         if nodes > 0:
             curr_mask = mask[b, :, :].cpu()
-            # s = scores[b, :, :].cpu().tolist()
-            # G = encode_graph_mtt(s, nodes, curr_mask)
             G = encode_graph_mtt_indexed(scores[b, :, :], curr_mask)
             tree = nx.maximum_branching(G)
-            # decode_tree(T[b, :, :], tree)
-            # my_branch_edges = list(nx.dfs_edges(tree))
-            # print('branch edges: ', my_branch_edges)
             tree_lst.append(tree)
     return tree_lst
 
@@ -99,9 +89,6 @@ def encode_graph_mtt_indexed(scores, mask):
     masked_indices_nonzero = masked_indices_nonzero.tolist()
     masked_scores = scores[masked_indices].tolist()
     for pos, score in zip(masked_indices_nonzero, masked_scores):
-        # vertex_from = int(pos[0].item())
-        # vertex_to = int(pos[1].item())
-        # edge_score = score.item()
         vertex_from = int(pos[0])
         vertex_to = int(pos[1])
         edge_score = score
@@ -113,7 +100,6 @@ def encode_graph_mtt_indexed(scores, mask):
 def decode_tree(output, tree):
     for src, dst in tree.edges():
         if dst == 0:
-            # print(src, dst)
             logger.info('src: %s dst: %s' % (src, dst))
             output[src][src] = 1
         else:

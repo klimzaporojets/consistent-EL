@@ -22,13 +22,13 @@ class SubsetDataset(Dataset):
         return len(self.indices)
 
 
-def create_datasets(config, dictionaries, linking_candidates=None):
+def create_datasets(config, dictionaries):
     if config['dataloader']['type'] == 'dwie_spanbert_hoi':
         datasets = {name: DatasetDWIESpanBertHoi(name, {'dataset': value,
                                                         'model': config['model'],
                                                         'dataloader': config['dataloader'],
                                                         'output_config': config['output_config']
-                                                        }, dictionaries, linking_candidates)
+                                                        }, dictionaries)
                     for name, value in config['datasets'].items()}
     else:
         raise BaseException('no such data loader: %s' % config['dataloader'])

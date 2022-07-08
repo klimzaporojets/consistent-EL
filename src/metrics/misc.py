@@ -19,14 +19,14 @@ class MetricObjective:
         self.total = 0
         self.iter += 1
 
-    def update(self, logits, targets, args, metadata={}):
-        self.total += args['obj']
+    # def update(self, logits, targets, args, metadata={}):
+    #     self.total += args['obj']
 
-    def update2(self, args, metadata={}):
+    def update2(self, args):
         self.total += args['loss']
 
-    def print(self, dataset_name, details=False):
+    def print(self, dataset_name):
         logger.info('EVAL-OBJ\t{}-{}\tcurr-iter: {}\tobj: {}'.format(dataset_name, self.task, self.iter, self.total))
 
-    def log(self, tb_logger, dataset_name):
+    def log(self, tb_logger):
         tb_logger.log_value('metrics/{}/obj'.format(self.task), self.total, self.iter)

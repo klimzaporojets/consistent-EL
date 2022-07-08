@@ -44,7 +44,7 @@ class ModuleCorefLinkerMTTPropE2EHoi(nn.Module):
                 self.entity_embedder = KolitsasEntityEmbeddings(dictionaries, config['entity_embedder'])
             else:
                 raise RuntimeError(
-                    'Unrecognized embeddings type in ModuleCorefLinkerPropE2EHoi: ' + self.embeddings_type)
+                    'Unrecognized embeddings type in ModuleCorefLinkerPropE2EHoi: %s' % self.embeddings_type)
 
             self.linker_coref = OptFFpairsCorefLinkerMTTBaseHoi(dim_span, self.entity_embedder,
                                                                 1, config['coreflinker_prop'], span_pair_generator,
@@ -56,8 +56,7 @@ class ModuleCorefLinkerMTTPropE2EHoi(nn.Module):
         else:
             self.entity_embedder = None
 
-    def coref_add_scores_coreflinker(self, coref_scores, filtered_prune_scores, filter_singletons_with_matrix,
-                                     subtract_pruner_for_singletons=True):
+    def coref_add_scores_coreflinker(self, coref_scores, filtered_prune_scores):
         scores_left = filtered_prune_scores  # .shape --> torch.Size([1, 21, 1])
 
         scores_right = filtered_prune_scores.squeeze(-1).unsqueeze(-2)  # .shape --> torch.Size([1, 1, 21])
@@ -132,9 +131,7 @@ class ModuleCorefLinkerMTTPropE2EHoi(nn.Module):
                                                 max_cand_length=max_cand_length).squeeze(-1)
         # linker_coref_scores.shape -->
         linker_coref_scores = self.coref_add_scores_coreflinker(linker_coref_scores,
-                                                                filtered_spans['span_scores'].unsqueeze(-1),
-                                                                # self.filter_singletons_with_matrix,
-                                                                False, subtract_pruner_for_singletons=False)
+                                                                filtered_spans['span_scores'].unsqueeze(-1))
         # linker_coref_scores.shape --> torch.Size([1, 21, 38])
         update_all = all_spans
         update_filtered = filtered_spans

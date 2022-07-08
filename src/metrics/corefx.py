@@ -11,7 +11,7 @@ logger = logging.getLogger()
 # version modified by Klim to include singletons
 class MetricCorefExternal:
 
-    def __init__(self, task, verbose=False):
+    def __init__(self, task):
         self.task = task
         self.debug = False
         self.iter = 0
@@ -48,7 +48,7 @@ class MetricCorefExternal:
                 logger.debug('gold: %s' %
                              ([[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in gold]))
 
-    def print(self, dataset_name, details=False):
+    def print(self, dataset_name):
         logger.info('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'
                     .format(dataset_name, self.task, self.iter, 'muc-ext', self.coref_muc.get_f1()))
         logger.info('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'
@@ -61,7 +61,7 @@ class MetricCorefExternal:
         logger.info('EVAL-COREF\t{}-{}\tcurr-iter: {}\t{}-f1: {}'
                     .format(dataset_name, self.task, self.iter, 'avg-ext', tmp))
 
-    def log(self, tb_logger, dataset_name):
+    def log(self, tb_logger):
         # (kzaporoj) - log to tensorboard
         tb_logger.log_value('metrics-coref-ext/{}-f1'.format('muc-ext'), self.coref_muc.get_f1(), self.iter)
         tb_logger.log_value('metrics-coref-ext/{}-f1'.format('bcubed-m-ext'),

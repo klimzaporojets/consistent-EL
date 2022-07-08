@@ -41,7 +41,6 @@ def convert_to_json(identifier, tags, content, begin, end, ner, coref,
             mention.add_candidates_and_scores(candidates, scores)
 
     if coref_scores is not None:
-        # print('in builder the coref_scores are: ', coref_scores)
         for (begin, end), candidates_and_scores in coref_scores.items():
             if (begin, end) in builder.span2mention:
                 mention = builder.add_mention(begin, end)
@@ -53,11 +52,8 @@ def convert_to_json(identifier, tags, content, begin, end, ner, coref,
                 mention.add_coref_scores(cand_scores_char_text)
 
     if links_pred is not None:
-        # span_to_pred_link = dict()
         for span_start, span_end, link_pred in links_pred:
-            # if not output_config['output_none_mentions']
             mention = builder.add_mention(span_start, span_end)
-            # span_to_pred_link[(span_start, span_end)] = link_pred
             mention.add_link_pred(link_pred)
 
     if links_gold is not None:

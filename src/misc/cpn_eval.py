@@ -7,12 +7,6 @@ from collections import Counter
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-# stand-alone evaluation script, should be runnable by external people
-# TODO:
-# 1. concept wise NER scoring?
-# 2. don't throw out  singleton clusters for coref
-# 3. overall average score ?
-
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 logger = logging.getLogger()
@@ -43,21 +37,9 @@ def load_data(path, tag=None):
         return load_jsonl(path, tag)
 
 
-# TODO: make a decision if we allow inconsistent predictions
 def decode_spans(instance):
     spans = []
     for mention in instance['mentions']:
-        # (kzaporoj) - previous code that merges purely mention-based predictions with cluster-based predictions
-        # The idea is to separate the purely mention-based ('tags' in each mention) from "expanded" (coming from the
-        # tags in cluster) - see decode_spans_expanded
-
-        # if mention['concept'] > -1:
-        #     concept = instance['concepts'][mention['concept']]
-        #     concept_tags = concept['tags'] if 'tags' in concept else []
-        #     tags = mention['tags'] if 'tags' in mention else concept_tags
-        # else:
-        #     tags = mention['tags'] if 'tags' in mention else []
-
         tags = mention['tags'] if 'tags' in mention else []
 
         for tag in tags:
@@ -99,9 +81,6 @@ def decode_links(instance, is_pred=False):
     else:
         for curr_mention in mentions:
             if 'link_pred' in curr_mention and not isinstance(curr_mention['link_pred'], list):
-                # if 'link' in curr_mention:
-                #     if 'candidates' in curr_mention and curr_mention['link'] is not None and curr_mention['link'] != 'NILL':
-                #         if curr_mention['']
                 decoded_links.append((curr_mention['begin'], curr_mention['end'], curr_mention['link_pred']))
             elif 'candidates' in curr_mention and 'scores' in curr_mention:
                 if 'link_pred' in concepts[curr_mention['concept']] and \
@@ -109,16 +88,6 @@ def decode_links(instance, is_pred=False):
                         and concepts[curr_mention['concept']]['link_pred'] != 'NILL':
                     raise RuntimeError(
                         'This should not happen, no link_pred in mention but link_pred in respective concept.')
-                # print('WARN!!!: no link_pred detected!!! in ', instance['id'])
-                # mention_scores = curr_mention['scores']
-                # max_ele = mention_scores[0]
-                # max_ele_idx = 0
-                # for i in range(1, len(mention_scores)):
-                #     if mention_scores[i] > max_ele:
-                #         max_ele = mention_scores[i]
-                #         max_ele_idx = i
-                # decoded_links.append((curr_mention['begin'], curr_mention['end'],
-                #                       curr_mention['candidates'][max_ele_idx]))
 
     return decoded_links
 
@@ -145,29 +114,15 @@ def decode_links_from_ents(instance, is_pred=False):
             else:
                 # kzaporoj 14/07/2021 --> needed in order to report NIL results, since we do not predict the entity type
                 # the NILL is for all the mentions (including time, and roles)
-                # curr_concept['link'] = 'NILL'
                 decoded_links.append((curr_mention['begin'], curr_mention['end'], 'NILL'))
     else:
         for curr_mention in mentions:
             if 'link_pred' in curr_mention and not isinstance(curr_mention['link_pred'], list):
                 decoded_links.append((curr_mention['begin'], curr_mention['end'], curr_mention['link_pred']))
-            # elif 'candidates' in curr_mention and 'scores' in curr_mention:
             else:
                 # kzaporoj 14/07/2021 --> needed in order to report NIL results, since we do not predict the entity type
                 # the NILL is for all the mentions (including time, and roles)
                 decoded_links.append((curr_mention['begin'], curr_mention['end'], 'NILL'))
-                # pass  # TODO: see good this situations, doesn't happen with baseline, but happens with coreflinker and mtt
-                # print('WARN!!!: no link_pred detected!!! in ', instance['id'], curr_mention['text'],
-                #       '(', curr_mention['begin'], ',', curr_mention['end'], ')')
-                # mention_scores = curr_mention['scores']
-                # max_ele = mention_scores[0]
-                # max_ele_idx = 0
-                # for i in range(1, len(mention_scores)):
-                #     if mention_scores[i] > max_ele:
-                #         max_ele = mention_scores[i]
-                #         max_ele_idx = i
-                # decoded_links.append((curr_mention['begin'], curr_mention['end'],
-                #                       curr_mention['candidates'][max_ele_idx]))
 
     return decoded_links
 
@@ -202,7 +157,6 @@ def decode_spans_expanded(instance):
             concept_tags = concept['tags'] if 'tags' in concept else []
             tags = concept_tags
         else:
-            # tags = mention['tags'] if 'tags' in mention else []
             # can happen for example for ner only scenario that there are no concepts in the predictions
             return []
 
@@ -243,7 +197,6 @@ def decode_links_clusters(instance, is_pred=False):
 
     for concept_id, concept_info in enumerate(instance['concepts']):
         if concept_id in concept_id_to_mentions:
-            link = None
             if link_entry in concept_info:
                 link = concept_info[link_entry]
                 if link is None:
@@ -313,7 +266,7 @@ def decode_relations_expanded(instance):
     relations = set([(relation['s'], relation['p'], relation['o']) for relation in instance['relations']])
 
     if len(relations) != len(instance['relations']):
-        # print("WARNING: duplicate relations")
+        # logger.warning('WARNING: duplicate relations')
         pass
 
     # relations = [(concept2cluster[s], concept2cluster[o], p) for s, p, o in relations]
@@ -386,8 +339,8 @@ class MetricLinkingF1Mention:
 
     def print_debug(self):
         print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format('', self.total_tp, self.total_fp,
-                                                                                    self.total_fn, self.get_pr(),
-                                                                                    self.get_re(), self.get_f1()))
+                                                                              self.total_fn, self.get_pr(),
+                                                                              self.get_re(), self.get_f1()))
 
     def get_pr(self):
         return self.total_tp / (self.total_tp + self.total_fp) if self.total_tp != 0 else 0.0
@@ -470,8 +423,8 @@ class MetricLinkingF1Hard:
 
     def print_debug(self):
         print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'
-                    .format('', self.total_tps, self.total_fps, self.total_fns, self.get_pr(), self.get_re(),
-                            self.get_f1()))
+              .format('', self.total_tps, self.total_fps, self.total_fns, self.get_pr(), self.get_re(),
+                      self.get_f1()))
 
     def get_pr(self):
         return self.total_tps / (self.total_tps + self.total_fps) if self.total_tps != 0 else 0.0
@@ -558,8 +511,8 @@ class MetricLinkingF1Soft:
 
     def print_debug(self):
         print('{:32}    {:5}  {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'
-                    .format('', self.total_p_tp, self.total_p_fp, self.total_r_tp, self.total_r_fn, self.get_pr(),
-                            self.get_re(), self.get_f1()))
+              .format('', self.total_p_tp, self.total_p_fp, self.total_r_tp, self.total_r_fn, self.get_pr(),
+                      self.get_re(), self.get_f1()))
 
     def get_pr(self):
         return self.total_p_tp / (self.total_p_tp + self.total_p_fp) if self.total_p_tp != 0 else 0.0
@@ -659,8 +612,8 @@ class MetricLinkingF1MentionSoft:
 
     def print_debug(self):
         print('{:32}    {:5}  {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'
-                    .format('', self.total_p_tp, self.total_p_fp, self.total_r_tp, self.total_r_fn, self.get_pr(),
-                            self.get_re(), self.get_f1()))
+              .format('', self.total_p_tp, self.total_p_fp, self.total_r_tp, self.total_r_fn, self.get_pr(),
+                      self.get_re(), self.get_f1()))
 
     def get_pr(self):
         return self.total_p_tp / (self.total_p_tp + self.total_p_fp) if self.total_p_tp != 0 else 0.0
@@ -698,7 +651,6 @@ class MetricLinkingAccuracyMention:
         (51, 52, 'NILL'), (53, 54, 'NILL'), (57, 57, 'Berlin')]
         :return:
         """
-        # for pred, gold in zip(args['scores'], args['gold']):
         for pred, gold in zip(preds, golds):
             if pred is None and (gold is None or len(gold) == 0):
                 continue
@@ -706,7 +658,7 @@ class MetricLinkingAccuracyMention:
             G = exclude_nills_mentions(gold)
 
             for (begin, end), candidates, scores in pred:
-                best_score = - float("inf")
+                best_score = - float('inf')
                 best_candidate = None
                 for candidate, score in zip(candidates, scores):
                     if candidate == 'NILL':
@@ -818,8 +770,8 @@ class MetricF1:
             print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'.format(label, tp, fp, fn, pr, re, f1))
 
         print('{:32}    {:5}  {:5}  {:5}    {:6.5f}  {:6.5f}  {:6.5f}'
-                    .format('', self.total_tp, self.total_fp, self.total_fn, self.get_pr(), self.get_re(),
-                            self.get_f1()))
+              .format('', self.total_tp, self.total_fp, self.total_fn, self.get_pr(), self.get_re(),
+                      self.get_f1()))
 
     def get_pr(self):
         return self.total_tp / (self.total_tp + self.total_fp) if self.total_tp != 0 else 0.0
@@ -920,7 +872,7 @@ class MetricF1Soft:
             f1 = 2.0 * pr * re / (pr + re) if pr * re != 0.0 else 0.0
 
             print('{:24}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.5f}'
-                        .format(label, p_tp, p_fp, pr, r_tp, r_fn, re, f1))
+                  .format(label, p_tp, p_fp, pr, r_tp, r_fn, re, f1))
 
             total_p_tp += p_tp
             total_p_fp += p_fp
@@ -932,7 +884,7 @@ class MetricF1Soft:
         total_f1 = 2.0 * total_pr * total_re / (total_pr + total_re) if total_pr * total_re != 0.0 else 0.0
 
         print('SOFT NER {:24}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.5f}'
-                    .format('', total_p_tp, total_p_fp, total_pr, total_r_tp, total_r_fn, total_re, total_f1))
+              .format('', total_p_tp, total_p_fp, total_pr, total_r_tp, total_r_fn, total_re, total_f1))
 
     def get_pr(self):
         return self.total_p_tp / (self.total_p_tp + self.total_p_fp) if self.total_p_tp != 0 else 0.0
@@ -999,7 +951,7 @@ class MetricF1Hard:
             f1 = 2.0 * pr * re / (pr + re) if pr * re != 0.0 else 0.0
 
             print('{:24}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.5f}'
-                        .format(label, tps, fps, pr, tps, fns, re, f1))
+                  .format(label, tps, fps, pr, tps, fns, re, f1))
 
             total_tps += tps
             total_fps += fps
@@ -1010,7 +962,7 @@ class MetricF1Hard:
         total_f1 = 2.0 * total_pr * total_re / (total_pr + total_re) if total_pr * total_re != 0.0 else 0.0
 
         print('SOFT NER {:24}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.5f}'
-                    .format('', total_tps, total_fps, total_pr, total_tps, total_fns, total_re, total_f1))
+              .format('', total_tps, total_fps, total_pr, total_tps, total_fns, total_re, total_f1))
 
     def get_pr(self):
         return self.total_tps / (self.total_tps + self.total_fps) if self.total_tps != 0 else 0.0
@@ -1109,14 +1061,10 @@ class MetricCoref:
             for cluster2, count in gold_counts.items():
                 correct += count * count
 
-            # (kzaporoj) - old mention-based:
-            # numerator += correct / float(len(cluster))
             # (kzaporoj) - dividing it by the length of the cluster will make it have same weight in scoring than other
             # bigger/smaller clusters
             numerator += correct / float(len(cluster)) / float(len(cluster))
 
-            # (kzaporoj) - old mention-based:
-            # denominator += len(cluster)
             # (kzaporoj) - here just sums 1 for each cluster, treating them equally
             denominator += 1
         return numerator, denominator
@@ -1322,7 +1270,7 @@ class MetricRelationF1:
             f1 = 2.0 * pr * re / (pr + re) if pr * re != 0.0 else 0.0
 
             print('{:24}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.5f}'
-                        .format(label, p_tp, p_fp, pr, r_tp, r_fn, re, f1))
+                  .format(label, p_tp, p_fp, pr, r_tp, r_fn, re, f1))
 
             total_p_tp += p_tp
             total_p_fp += p_fp
@@ -1334,7 +1282,7 @@ class MetricRelationF1:
         total_f1 = 2.0 * total_pr * total_re / (total_pr + total_re) if total_pr * total_re != 0.0 else 0.0
 
         print('{:24}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.5f}'
-                    .format('', total_p_tp, total_p_fp, total_pr, total_r_tp, total_r_fn, total_re, total_f1))
+              .format('', total_p_tp, total_p_fp, total_pr, total_r_tp, total_r_fn, total_re, total_f1))
 
     def get_pr(self):
         return self.total_p_tp / (self.total_p_tp + self.total_p_fp) if self.total_p_tp != 0 else 0.0
@@ -1400,7 +1348,7 @@ class MetricRelationF1Hard:
             f1 = 2.0 * pr * re / (pr + re) if pr * re != 0.0 else 0.0
 
             print('{:24}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.1f} / {:6.1f} = {:6.5f}    {:6.5f}'
-                        .format(label, tps, fps, pr, tps, fns, re, f1))
+                  .format(label, tps, fps, pr, tps, fns, re, f1))
 
             total_tps += tps
             total_fps += fps
@@ -1453,10 +1401,9 @@ class MetricRelationF1Mention:
                 self.labels.add(rel)
                 self.tps[rel] = 0
                 self.fps[rel] = 0
-                # self.r_tns[rel] = 0
                 self.fns[rel] = 0
 
-    def add_cluster_relations(self, pred, gold, doc_id=''):
+    def add_cluster_relations(self, pred, gold):
         self.add_labels(pred)
         self.add_labels(gold)
 
@@ -1466,7 +1413,7 @@ class MetricRelationF1Mention:
         for src_cluster, dst_cluster, rel in pred:
             pairs = to_pairs(src_cluster, dst_cluster, rel)
             if len(pairs) > 0:
-                tp = len(pairs & G)  # / len(pairs)
+                tp = len(pairs & G)
                 fp = len(pairs) - tp
 
                 self.tps[rel] += tp
@@ -1477,21 +1424,17 @@ class MetricRelationF1Mention:
         for src_cluster, dst_cluster, rel in gold:
             pairs = to_pairs(src_cluster, dst_cluster, rel)
             if len(pairs) > 0:
-                # tp = len(pairs & P) # / len(pairs)
                 fn = len(pairs) - len(pairs & P)
                 self.fns[rel] += fn
                 self.total_fn += fn
 
-    def add_mention_relations(self, pred, gold, doc_id=''):
+    def add_mention_relations(self, pred, gold):
         self.add_labels(pred)
         self.add_labels(gold)
 
-        # P = to_pairwise(pred)
         G = to_pairwise(gold)
 
         for src_mention, dst_mention, rel in pred:
-            # pairs = to_pairs(src_cluster, dst_cluster, rel)
-            # if len(pairs) > 0:
             tp = len({(src_mention, dst_mention, rel)} & G)
             fp = 1 - tp
 
@@ -1631,10 +1574,10 @@ class EvaluatorCPN:
         if self.debug:
             print(pred['id'])
             content = pred['content']
-            print("P:", P)
-            print("G:", G)
-            print("P:", [[content[begin:end] for begin, end in cluster] for cluster in P])
-            print("G:", [[content[begin:end] for begin, end in cluster] for cluster in G])
+            print('P:', P)
+            print('G:', G)
+            print('P:', [[content[begin:end] for begin, end in cluster] for cluster in P])
+            print('G:', [[content[begin:end] for begin, end in cluster] for cluster in G])
 
         self.tags_mention.add([P], [G])
         self.tags_mention_expanded.add([P_expanded], [G])
@@ -1644,7 +1587,6 @@ class EvaluatorCPN:
         self.links_soft_ent_links.add([P_links_cluster], [G_links_cluster])
 
         P_links_mention_cluster = decode_links_mention_clusters(pred)
-        # G_links_mention_cluster = decode_links_mention_clusters(gold, is_pred=False)
 
         self.links_mentionsoft_ent_links.add([P_links_mention_cluster], [G_links_cluster])
         self.links_hard_ent_links.add([P_links_cluster], [G_links_cluster])
@@ -1674,18 +1616,8 @@ class EvaluatorCPN:
         self.rels_mention_expanded.add_cluster_relations(P_expanded, G)
         self.rels_mention.add_mention_relations(P, G)
 
-        # (kzaporoj) - previous code that doesn't differentiate between expanded and mention-based relation predictions
-        # if 'mention_relations' not in pred:
-        #     # uses relation mentions on cluster level if no "relation_mentions" exist in predicted file, this is done
-        #     # by expanding the cluster-based relations into mention-based relations by doing cartesian product between
-        #     # mentions of related clusters.
-        #     self.rels_mention.add_cluster_relations(P, G)
-        # else:
-        #     P = decode_relations(pred)
-        #     self.rels_mention.add_mention_relations(P, G)
-
     def printInfo(self):
-        print("## Coreference")
+        print('## Coreference')
         print('\t{:.<30} {}'.format('muc-f1:', self.coref_muc.get_f1()))
         print()
         avg = sum([self.coref_muc.get_f1(), self.coref_bcubed.get_f1(), self.coref_ceafe.get_f1()]) / 3
@@ -1750,19 +1682,19 @@ class EvaluatorCPN:
         print()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pred", dest="pred", type=str, default=None, required=True)
-    parser.add_argument("--gold", dest="gold", type=str, default=None, required=True)
-    parser.add_argument("--pred-filter", dest="pred_filter", type=str, default=None, required=False)
-    parser.add_argument("--gold-filter", dest="gold_filter", type=str, default=None, required=False)
+    parser.add_argument('--pred', dest='pred', type=str, default=None, required=True)
+    parser.add_argument('--gold', dest='gold', type=str, default=None, required=True)
+    parser.add_argument('--pred-filter', dest='pred_filter', type=str, default=None, required=False)
+    parser.add_argument('--gold-filter', dest='gold_filter', type=str, default=None, required=False)
     args = parser.parse_args()
 
     pred = load_data(args.pred, args.pred_filter)
     gold = load_data(args.gold, args.gold_filter)
 
-    print("pred instances:", len(pred))
-    print("gold instances:", len(gold))
+    print('pred instances:', len(pred))
+    print('gold instances:', len(gold))
 
     evaluator = EvaluatorCPN()
     for identifier in gold.keys():

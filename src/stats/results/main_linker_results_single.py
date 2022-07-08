@@ -47,7 +47,6 @@ if __name__ == "__main__":
 
     predicted_path = args.predicted_path
     ground_truth_path = args.ground_truth_path
-    # setup = args.setup
 
     loaded_predicted_test = load_jsonl(predicted_path, None)
 

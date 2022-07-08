@@ -16,7 +16,6 @@ logger = logging.getLogger()
 def load_wordembeddings(filename, dictionary: Dictionary, dim=300, out_of_voc_vector=None, filtered_file=None,
                         use_filtered=False, what_load='dictionary', load_type='wordvec'):
     logger.info('loading word vectors: %s' % filename)
-    # logger.info('load_wordembeddings use_filtered: ', use_filtered, ' what_load: ', what_load, ' load_type: ', load_type)
     logger.info('load_wordembeddings use_filtered: %s what_load %s load_type %s' % (use_filtered, what_load, load_type))
     if what_load == 'allvecs':
         file = open_embedding_file(use_filtered, filtered_file, filename)
@@ -64,8 +63,6 @@ def load_wordembeddings(filename, dictionary: Dictionary, dim=300, out_of_voc_ve
 
 
 def open_embedding_file(use_filtered, filtered_file, filename):
-    # print('IN OPEN_EMBEDDING_FILE with use_filtered: ', use_filtered, '  filtered_file: ', filtered_file,
-    #       ' filename: ', filename)
     logger.info('IN OPEN_EMBEDDING_FILE with use_filtered: %s filtered_file: %s filename %s' %
                 (use_filtered, filtered_file, filename))
     if use_filtered and os.path.isfile(filtered_file):
@@ -121,7 +118,6 @@ def load_wordembeddings_with_random_unknowns(filename, dictionary: Dictionary = 
         for line in file:
             if is_valid_word_line(line, load_type):
                 values = parse_line(line, load_type)
-                # values = line.rstrip().split(' ')
                 word = values[0]
                 dictionary.add(word)
 
@@ -149,7 +145,6 @@ def load_wordembeddings_with_random_unknowns(filename, dictionary: Dictionary = 
         nr_lines_file += 1
         if is_valid_word_line(line, load_type):
             values = parse_line(line, load_type)
-            # values = line.rstrip().split(' ')
             word = values[0]
             if word in accept:
                 np_found = np.asarray(values[1], dtype='float32')

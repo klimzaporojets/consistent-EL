@@ -96,7 +96,7 @@ def collate_candidates_in_pytorch(instances, unknown_id):
     return output, lengths
 
 
-def collate_spanbert(model, batch, device, collate_api=False):
+def collate_spanbert(model, batch, collate_api=False):
     """
 
     :param model:
@@ -164,7 +164,6 @@ def create_spanprop_hoi(model, config):
 
         if sp_type == 'attprop':
             return ModuleAttentionPropHoi(model.span_extractor.dim_output,
-                                          # model.span_pruner.scorer,
                                           model.span_pair_generator, config['spanprop'])
         else:
             raise BaseException("no such spanprop:", sp_type)
@@ -299,12 +298,12 @@ class CoreflinkerSpanBertHoi(nn.Module):
         if not self.span_pruner.sort_after_pruning and self.pairs.requires_sorted_spans:
             raise BaseException("ERROR: spans MUST be sorted")
 
-    def collate_func(self, datasets, device):
-        return lambda x: collate_spanbert(self, x, device)
+    def collate_func(self):
+        return lambda x: collate_spanbert(self, x)
 
     def log_stats(self, dataset_name, tb_logger, step_nr):
         self.span_pruner.log_stats(dataset_name, not self.training, tb_logger, step_nr)
-        self.coref_linker_task.log_stats(dataset_name, not self.training, tb_logger, step_nr)
+        self.coref_linker_task.log_stats(dataset_name, tb_logger, step_nr)
         self.coref_linker_scorer.log_stats(dataset_name, not self.training, tb_logger, step_nr)
 
     def get_params(self, named=False):
@@ -415,7 +414,7 @@ class CoreflinkerSpanBertHoi(nn.Module):
         span_end = span_end[0][span_mask[0]].unsqueeze(0)
         #
         span_vecs, candidate_width_idx = \
-            self.span_extractor(embeddings.unsqueeze(0), span_begin, span_end, self.max_span_length, span_mask)
+            self.span_extractor(embeddings.unsqueeze(0), span_begin, span_end, self.max_span_length)
 
         all_spans = {
             'cand_span_vecs': span_vecs,
@@ -444,19 +443,22 @@ class CoreflinkerSpanBertHoi(nn.Module):
         if self.span_prop is not None:
             all_spans, filtered_spans = self.span_prop(
                 all_spans,
-                filtered_spans,
-                sequence_lengths
+                filtered_spans
             )
 
         ## coref
         if self.coref_task.enabled:
             coref_all, coref_filtered, coref_scores = self.coref_scorer(
                 all_spans,
-                filtered_spans,
-                metadata.get('gold_spans_tensors'),
-                max_span_length=self.max_span_length,
-                gold_spans_lengths=metadata.get('gold_spans_lengths')
+                filtered_spans
             )
+            # coref_all, coref_filtered, coref_scores = self.coref_scorer(
+            #     all_spans,
+            #     filtered_spans,
+            #     metadata.get('gold_spans_tensors'),
+            #     max_span_length=self.max_span_length,
+            #     gold_spans_lengths=metadata.get('gold_spans_lengths')
+            # )
         else:
             coref_scores = None
 
@@ -542,7 +544,7 @@ class CoreflinkerSpanBertHoi(nn.Module):
 
         for m in metrics:
             if m.task in output:
-                m.update2(output[m.task], metadata)
+                m.update2(output[m.task])
 
         if self.debug_memory:
             logger.debug('(loss)  %s' % (torch.cuda.memory_allocated(0) / 1024 / 1024))

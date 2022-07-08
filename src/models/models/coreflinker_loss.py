@@ -201,7 +201,6 @@ def m2i_to_clusters_linkercoref(m2i, coref_col_to_link_id=None,
         # if points to 'NILL', just makes it point to itself, this is because we can not cluster entities based on 'NILL'
         # since different entities can point to 'NILL'. Same with NONE.
         if link_token == 'NILL' or link_token == 'NONE':
-            # if link_token == 'NILL':
             if m not in clusters:
                 clusters[m] = []
             clusters[m].append(m)
@@ -500,7 +499,7 @@ class CorefLinkerLoss(nn.Module):
                 mask = get_mask_from_sequence_lengths(lengths_coref, lengths_coref.max().item()).float()
                 output['loss'] = self.weight * (mask * loss).sum()
             elif not api_call:  # when api call is performed (e.g. with only text), we do not get the gold annotation
-                raise BaseException("HUH")
+                raise BaseException('HUH')
             else:
                 output['loss'] = 0.0
 

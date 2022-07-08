@@ -38,7 +38,7 @@ class MetricLinkerImproved:
         self.fp = 0
         self.fn = 0
 
-    def update2(self, args, metadata={}):
+    def update2(self, args):
         for pred, gold in zip(args['pred'], args['gold']):
             if pred is None and gold is None:
                 continue
@@ -61,7 +61,7 @@ class MetricLinkerImproved:
     def get_f1(self):
         return 2.0 * self.tp / (2.0 * self.tp + self.fp + self.fn) if self.tp != 0 else 0.0
 
-    def print(self, dataset_name, details=False):
+    def print(self, dataset_name):
         if self.get_f1() > self.best_f1:
             self.best_f1 = self.get_f1()
             self.best_epoch = self.epoch
@@ -74,7 +74,7 @@ class MetricLinkerImproved:
                 .format(dataset_name, self.task, self.mode, self.tp, self.fp, self.fn, self.get_pr(), self.get_re(),
                         self.get_f1(), stall, self.best_f1))
 
-    def log(self, tb_logger, dataset_name):
+    def log(self, tb_logger):
         tb_logger.log_value('metrics-{}/{}'.format(self.task, self.mode + '-f1'), self.get_f1(), self.epoch)
         tb_logger.log_value('metrics-{}/{}'.format(self.task, self.mode + '-re'), self.get_re(), self.epoch)
         tb_logger.log_value('metrics-{}/{}'.format(self.task, self.mode + '-pr'), self.get_pr(), self.epoch)
@@ -96,7 +96,7 @@ class MetricLinkAccuracy:
         self.numer = 0
         self.denom = 0
 
-    def update2(self, args, metadata={}):
+    def update2(self, args):
         for pred, gold in zip(args['scores'], args['gold']):
             if pred is None and (gold is None or len(gold) == 0):
                 continue
@@ -121,7 +121,7 @@ class MetricLinkAccuracy:
             self.numer += len(P & G)
             self.denom += len(G)
 
-    def print(self, dataset_name, details=False):
+    def print(self, dataset_name):
         acc = self.numer / self.denom if self.numer != 0 else 0.0
         if acc > self.best_linkacc:
             self.best_linkacc = acc
@@ -132,7 +132,7 @@ class MetricLinkAccuracy:
         logger.info('EVAL-LINKER\t{}-{}\tlink-acc: {:7} / {:7} = {:7.6f}    stall: {:2}   best: {:7.6f}'
                     .format(dataset_name, self.task, self.numer, self.denom, acc, stall, self.best_linkacc))
 
-    def log(self, tb_logger, dataset_name):
+    def log(self, tb_logger):
         acc = self.numer / self.denom if self.numer != 0 else 0.0
         tb_logger.log_value('metrics-{}/{}'.format(self.task, 'acc'), acc, self.epoch)
 
@@ -153,7 +153,7 @@ class MetricLinkAccuracyNoCandidates:
         self.numer = 0
         self.denom = 0
 
-    def update2(self, args, metadata={}):
+    def update2(self, args):
         for pred, gold in zip(args['pred'], args['gold']):
             if pred is None and (gold is None or len(gold) == 0):
                 continue
@@ -166,7 +166,7 @@ class MetricLinkAccuracyNoCandidates:
             self.numer += len(P & G)
             self.denom += len(G)
 
-    def print(self, dataset_name, details=False):
+    def print(self, dataset_name):
         acc = self.numer / self.denom if self.numer != 0 else 0.0
         if acc > self.best_linkacc:
             self.best_linkacc = acc
@@ -178,6 +178,6 @@ class MetricLinkAccuracyNoCandidates:
             'EVAL-LINKER\t{}-{}\tlink-acc (no candidates): {:7} / {:7} = {:7.6f}    stall: {:2}   best: {:7.6f}'
                 .format(dataset_name, self.task, self.numer, self.denom, acc, stall, self.best_linkacc))
 
-    def log(self, tb_logger, dataset_name):
+    def log(self, tb_logger):
         acc = self.numer / self.denom if self.numer != 0 else 0.0
         tb_logger.log_value('metrics-{}/{}'.format(self.task, 'acc-no-candidates'), acc, self.epoch)

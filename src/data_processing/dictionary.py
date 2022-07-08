@@ -69,7 +69,7 @@ class Dictionary:
                 self.size += 1
             else:
                 if self.debug:
-                    logger.info("oov: '{}' -> {}".format(token, self.token_unknown))
+                    logger.info('oov: "{}" -> {}'.format(token, self.token_unknown))
                 self.out_of_voc += 1
                 return self.token_unknown
         return self.word2idx[token]
@@ -83,7 +83,6 @@ class Dictionary:
 
     def set_unknown_token(self, unknown_token):
         self.tmp_unknown = unknown_token
-        # self.token_unknown = self.lookup(unknown_token) #NOT CORRECT
         self.token_unknown = self.word2idx[self.prefix + unknown_token]
         logger.info('%s -> %s' % (self.get(self.token_unknown), self.token_unknown))
 

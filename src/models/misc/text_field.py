@@ -39,14 +39,13 @@ class TextFieldEmbedderTokens(nn.Module):
             logger.warning('WARNING: training word vectors from scratch')
 
         if self.dictionary.size == 0:
-            logger.warning('"WARNING: empty dictionary')
+            logger.warning('WARNING: empty dictionary')
             return
 
         if 'fill' in config:
             logger.warning('WARNING: filling vector to constant value: %s' % config['fill'])
             index = self.dictionary.lookup(config['fill'])
             self.embed.weight.data[index, :] = 1.0 / math.sqrt(self.dim)
-            # logger.warning(config['fill'], '->', self.embed.weight.data[index, :])
             logger.warning('%s -> %s)' % (config['fill'], self.embed.weight.data[index, :]))
 
         nrms = self.embed.weight.norm(p=2, dim=1, keepdim=True)
@@ -136,4 +135,3 @@ class TextFieldEmbedderCharacters(nn.Module):
         char_vec = self.embedder(characters)
         char_vec = self.seq2vec(char_vec)
         return self.dropout(torch.relu(char_vec))
-

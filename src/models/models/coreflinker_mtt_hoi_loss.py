@@ -99,8 +99,8 @@ def create_coreflinker_mtt_z_mask_indexed(pred_spans, gold_spans, gold_clusters,
     return coreflinker_mtt_z_mask_indexed, torch.tensor(z_mask_lengths, dtype=torch.int32, device=settings.device)
 
 
-def m2i_to_clusters_linkercoref_mtt(m2i, coref_col_to_link_id=None,
-                                    links_dictionary: Dictionary = None, nr_candidates=0):
+def m2i_to_clusters_linkercoref_mtt(m2i, coref_col_to_link_id=None, links_dictionary: Dictionary = None,
+                                    nr_candidates=0):
     """
 
     :param m2i: <class 'list'>: [36, 4, 36, 14, 36, 4, 4, 4, 32]
@@ -125,7 +125,6 @@ def m2i_to_clusters_linkercoref_mtt(m2i, coref_col_to_link_id=None,
         # if points to 'NILL', just makes it point to itself, this is because we can not cluster entities based on 'NILL'
         # since different entities can point to 'NILL'. Same with NONE.
         if link_token == 'NILL' or link_token == 'NONE':
-            # if link_token == 'NILL':
             if m not in clusters:
                 clusters[m] = []
             clusters[m].append(m)
@@ -594,10 +593,7 @@ class LossCorefLinkerMTTHoi(nn.Module):
                torch.tensor(target_mask_lengths, dtype=torch.int32, device=settings.device)
 
     def decode_m2i_coreflinker_mtt(self, pred_masked_scores, pred_tree_mst,
-                                   # lengths_coref, lengths_linker,
-                                   candidate_ids,
                                    link_id_to_coref_col,
-                                   # coref_col_to_link_id,
                                    dic, unique_links,
                                    unique_links_lengths, pred_spans):
         """
@@ -618,7 +614,7 @@ class LossCorefLinkerMTTHoi(nn.Module):
             # -1 because we do not count the root node
             b_decoded_m2i_coref_linker.extend(
                 [b_link_id_to_coref_col[link_id.item()] - 1 for link_id in b_unique_links])
-            # b_pred_matrix_mst = pred_matrix_mst[batch]
+
             b_pred_tree_mst = pred_tree_mst[batch]
             b_pred_spans = pred_spans[batch]
             b_pred_masked_scores = pred_masked_scores[batch]
@@ -734,7 +730,7 @@ class LossCorefLinkerMTTHoi(nn.Module):
             raise RuntimeError('not implemented type in get_mtt_cost' + type)
         return mtt_cost
 
-    def get_mtt_loss(self, targets_mask, pred_scores_mtt, z_mask, torch_float_precision, print_debugging=False):
+    def get_mtt_loss(self, targets_mask, pred_scores_mtt, z_mask, torch_float_precision):
 
         if self.smart_arsinh:
             if self.enforce_scores:
@@ -921,7 +917,8 @@ class LossCorefLinkerMTTHoi(nn.Module):
                         pred_scores_mtt_exp_space.shape[-2] or \
                         targets_mask.shape[-1] != pred_scores_mtt_exp_space.shape[-1] or \
                         targets_mask.shape[-2] != pred_scores_mtt_exp_space.shape[-2]:
-                    logger.error('!!!ERROR IN DIMENSIONS!!! SOMETHING GOT WRONG, printing the details of hyperparameters')
+                    logger.error(
+                        '!!!ERROR IN DIMENSIONS!!! SOMETHING GOT WRONG, printing the details of hyperparameters')
                     logger.error('the expected dim is: %s' % expected_dim)
                     logger.error('the shape in pred_scores_mtt_exp_space is: %s' % pred_scores_mtt_exp_space.shape)
                     logger.error('target mask.shape: %s' % targets_mask.shape)
@@ -946,8 +943,7 @@ class LossCorefLinkerMTTHoi(nn.Module):
                                 'model_state': self.state_dict()}, 'failed_model_scores.bin')
 
                 tot_loss = self.get_mtt_loss(targets_mask=targets_mask, pred_scores_mtt=pred_scores_mtt_exp_space,
-                                             z_mask=z_mask, torch_float_precision=self.torch_float_precision,
-                                             print_debugging=self.print_debugging)
+                                             z_mask=z_mask, torch_float_precision=self.torch_float_precision)
 
                 for curr_multihead in batched_multiheads[0]:
                     curr_targets_mask = curr_multihead['mtt_targets']
@@ -955,9 +951,7 @@ class LossCorefLinkerMTTHoi(nn.Module):
                     curr_pred_scores_mtt = pred_scores_mtt_exp_space[0, indices, :][:, indices]
                     curr_z_mask = z_mask[0, indices, :][:, indices]
                     curr_loss = self.get_mtt_loss(targets_mask=curr_targets_mask, pred_scores_mtt=curr_pred_scores_mtt,
-                                                  z_mask=curr_z_mask, torch_float_precision=self.torch_float_precision,
-                                                  # for now do not print multihead matrices anyway
-                                                  print_debugging=False)
+                                                  z_mask=curr_z_mask, torch_float_precision=self.torch_float_precision)
                     if curr_loss is not None:
                         if tot_loss is not None:
                             tot_loss = tot_loss + curr_loss
@@ -1117,8 +1111,6 @@ class LossCorefLinkerMTTHoi(nn.Module):
                 # }"""
                 else:
                     logger.warning('WARNING, tot_log_cost_nil_clusters in None')
-                    # import pdb
-                    # pdb.set_trace()
 
             else:
                 raise RuntimeError('multihead_nil type not recognized in forward of coreflinker_mtt_hoi: ' +
@@ -1178,10 +1170,7 @@ class LossCorefLinkerMTTHoi(nn.Module):
                 decoded_m2i_coref_linker, span_to_pointer_detail_info = \
                     self.decode_m2i_coreflinker_mtt(pred_masked_scores,
                                                     pred_tree_mst,
-                                                    # lengths_coref, lengths_linker, # these two are probably not needed
-                                                    candidate_ids,
                                                     link_id_to_coref_col=link_id_to_coref_col,
-                                                    # coref_col_to_link_id=coref_col_to_link_id,
                                                     dic=self.entity_dictionary,
                                                     unique_links=unique_links,
                                                     unique_links_lengths=unique_links_lengths,
@@ -1408,7 +1397,6 @@ class LossCorefLinkerMTTHoi(nn.Module):
                         span_text = filtered_spans['content'][0][pos_text_begin:pos_text_end]
                         items.append('{}@{}:{}'.format(span_text, pos_text_begin, pos_text_end))
 
-                    # for curr_link_pred in output_linking['pred'][0]:
                     for curr_link_pred in link_pred_all[0]:
                         span_to_link[(curr_link_pred[0], curr_link_pred[1])] = curr_link_pred[2]
 
@@ -1529,7 +1517,7 @@ class LossCorefLinkerMTTHoi(nn.Module):
         else:
             return (sum(list_values) / len(list_values))
 
-    def log_stats(self, dataset_name, predict, tb_logger: Logger, step_nr):
+    def log_stats(self, dataset_name, tb_logger: Logger, step_nr):
         if self.print_debugging:
             logger.info('{}-coreflinker_mtt_hoi-loss: {}'.format(dataset_name, self.mtt_hoi_loss))
             tb_logger.log_value('{}-mtt-loss'.format(dataset_name), self.get_mean(self.mtt_hoi_loss), step_nr)

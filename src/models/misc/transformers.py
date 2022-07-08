@@ -32,11 +32,11 @@ def myencode(tokenizer, orig_tokens):
     bert_tokens = []
     orig_to_tok_map = []
 
-    bert_tokens.append("[CLS]")
+    bert_tokens.append('[CLS]')
     for orig_token in orig_tokens:
         orig_to_tok_map.append(len(bert_tokens))
         bert_tokens.extend(tokenizer.tokenize(orig_token))
-    bert_tokens.append("[SEP]")
+    bert_tokens.append('[SEP]')
 
     return bert_tokens, orig_to_tok_map
 
@@ -61,7 +61,7 @@ class CombineConcat(nn.Module):
 
 class WrapperBERT(nn.Module):
 
-    def __init__(self, dictionaries, config):
+    def __init__(self, config):
         super(WrapperBERT, self).__init__()
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
         self.model = BertModel.from_pretrained('bert-base-cased', output_hidden_states=True)
@@ -72,7 +72,7 @@ class WrapperBERT(nn.Module):
             self.out = CombineConcat()
             self.dim_output = 768 * len(self.layers)
         else:
-            raise BaseException("no such module")
+            raise BaseException('no such module %s ' % config['combine'])
 
         for param in self.model.parameters():
             param.requires_grad = False
@@ -113,7 +113,7 @@ class WrapperBERT(nn.Module):
 
 class WrapperSpanBERT(nn.Module):
 
-    def __init__(self, dictionaries, config):
+    def __init__(self, config):
         super(WrapperSpanBERT, self).__init__()
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
         self.model_path = config['model_path']
@@ -163,7 +163,7 @@ class WrapperSpanBERTSubtoken(nn.Module):
     For example, one of the differences seems that WrapperSpanBERT measures segmentation in words (tokens), while
     the coref-hoi does it in BERT sub-tokens, so the hyperparameter max_bert_length is on BERT sub-token level. """
 
-    def __init__(self, dictionaries, config):
+    def __init__(self, config):
         super(WrapperSpanBERTSubtoken, self).__init__()
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
         self.model_path = config['model_path']

@@ -464,7 +464,7 @@ class OptFFpairsCorefLinkerMTTBaseHoi(nn.Module):
         self.apply_root_dropout = config['apply_root_dropout']
 
         self.dropout = nn.Dropout(hidden_dp)
-        
+
         if not self.zeros_to_clusters:
             if self.init_root_type == 'std':
                 self.root_embedding = torch.zeros(dim_input_entities, device=settings.device,
@@ -562,81 +562,6 @@ class OptFFpairsCorefLinkerMTTBaseHoi(nn.Module):
                                     device=settings.device)
             out_final_scores = torch.cat([zeros_col, out_final_scores], dim=-2)
         return out_final_scores
-
-
-class OptFFpairsCorefLinkerMTTBase(nn.Module):
-    """The baseline implementation to produce the scores for the matrix to be used with Matrix Tree Theorem.
-    """
-
-    def __init__(self, dim_input, entity_embedder, dim_output, config, span_pair_generator, dictionaries=None):
-        # TODO: we are here dim_input_entities still has to be passed
-        super(OptFFpairsCorefLinkerMTTBase, self).__init__()
-        hidden_dim = config['hidden_dim']  # 150
-        hidden_dp = config['hidden_dropout']  # 0.4
-
-        dim_input_entities = entity_embedder.dim
-
-        self.root_embedding = torch.zeros(dim_input_entities, device=settings.device,
-                                          requires_grad=config['root_requires_grad'])
-
-        self.root_embedding[:] = entity_embedder.embed.weight.detach().mean(dim=0)[:]
-
-        self.dictionaries = dictionaries
-        self.entity_embedder = entity_embedder
-
-        self.span_pair_generator = span_pair_generator
-        self.left_spans = nn.Linear(dim_input, hidden_dim)
-        self.right_spans = nn.Linear(dim_input, hidden_dim)
-        self.prod_spans = nn.Linear(dim_input, hidden_dim)
-        self.dist_spans = nn.Linear(span_pair_generator.dim_distance_embedding, hidden_dim)
-
-        self.left_entities = nn.Linear(dim_input_entities, hidden_dim)
-
-        self.dp1_coref = nn.Dropout(hidden_dp)
-        self.layer2_coref = nn.Linear(hidden_dim, hidden_dim)
-        self.dp2_coref = nn.Dropout(hidden_dp)
-        self.out_coref = nn.Linear(hidden_dim, dim_output)
-
-        self.dp1_linking = nn.Dropout(hidden_dp)
-        self.layer2_linking = nn.Linear(hidden_dim, hidden_dim)
-        self.dp2_linking = nn.Dropout(hidden_dp)
-        self.out_linking = nn.Linear(hidden_dim, dim_output)
-
-    def forward(self, span_vecs, entity_vecs, span_begin, span_end, candidate_lengths, max_cand_length):
-        # span_vecs: torch.Size([1, 9, 9, 150])
-        # entity_vecs: torch.Size([1, 9, 17, 200])
-        p = self.span_pair_generator.get_product_embedding(span_vecs)  # torch.Size([1, 9, 9, 1676])
-        d = self.span_pair_generator.get_distance_embedding(span_begin, span_end)  # torch.Size([1, 9, 9, 20])
-
-        h_inter_span = self.left_spans(span_vecs).unsqueeze(-2) + self.right_spans(span_vecs).unsqueeze(-3) + \
-                       self.prod_spans(p) + self.dist_spans(d)  # torch.Size([1, 9, 9, 150])
-
-        # TODO: ideas to make this expansion cleaner?
-        # todo: MAYBE USE EXPAND??: https://discuss.pytorch.org/t/torch-repeat-and-torch-expand-which-to-use/27969/2
-        rooted_entity_vecs = self.root_embedding.repeat(entity_vecs.shape[0], entity_vecs.shape[1], 1, 1)
-
-        if max_cand_length == 0:
-            # if there are no candidates, no need to concatenate, with root is enough
-            entity_vecs = rooted_entity_vecs
-        else:
-            entity_vecs = torch.cat([rooted_entity_vecs, entity_vecs], dim=-2)
-
-        h_span_ent = (self.left_entities(entity_vecs) + self.right_spans(span_vecs).unsqueeze(-2))
-
-        # previous version (span-based coreference)
-        h_inter_span = self.dp1_coref(torch.relu(h_inter_span))
-        h_inter_span = self.layer2_coref(h_inter_span)
-        h_inter_span = self.dp2_coref(torch.relu(h_inter_span))
-        out_coref_scores = self.out_coref(h_inter_span)
-
-        h_span_ent = self.dp1_linking(torch.relu(h_span_ent))
-        h_span_ent = self.layer2_linking(h_span_ent)
-        h_span_ent = self.dp2_linking(torch.relu(h_span_ent))
-        out_linking_scores = self.out_linking(h_span_ent)
-
-        out_final_scores = torch.cat([out_linking_scores, out_coref_scores], dim=-2)
-
-        return out_final_scores 
 
 
 class DotPairs(nn.Module):

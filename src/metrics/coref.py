@@ -5,8 +5,6 @@ import numpy as np
 import torch
 from scipy.optimize import linear_sum_assignment
 
-## MOSTLY COPIED FROM ALLENNLP
-
 backup = None
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
@@ -154,8 +152,6 @@ class MetricCoref:
                 logger.error('ID %s' % identifier)
                 logger.error('pred: %s' % pred)
                 logger.error('gold: %s' % gold)
-                # print("pred:", [[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in pred])
-                # print("gold:", [[' '.join(tokens[begin:(end + 1)]) for begin, end in cluster] for cluster in gold])
                 logger.error('precision: {} / {}'.format(p_num, p_den))
                 logger.error('recall:    {} / {}'.format(r_num, r_den))
 
@@ -181,7 +177,7 @@ class MetricCoref:
             self.recall_numerator / float(self.recall_denominator)
         return 0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
 
-    def print(self, dataset_name, details=False):
+    def print(self, dataset_name):
         f1 = self.get_f1()
         if f1 > self.max_f1:
             self.max_f1 = f1
@@ -191,8 +187,7 @@ class MetricCoref:
                     .format(dataset_name, self.task, self.iter, self.name, f1, self.max_iter, self.name,
                             self.max_f1, self.iter - self.max_iter))
 
-    def log(self, tb_logger, dataset_name):
-        # tb_logger.log_value('{}/{}-f1'.format(dataset_name, self.name), self.get_f1(), self.iter)
+    def log(self, tb_logger):
         tb_logger.log_value('metrics-coref/{}-f1'.format(self.name), self.get_f1(), self.iter)
         tb_logger.log_value('metrics-coref/{}-pr'.format(self.name), self.get_pr(), self.iter)
         tb_logger.log_value('metrics-coref/{}-re'.format(self.name), self.get_re(), self.iter)
@@ -256,8 +251,6 @@ class MetricCoref:
         for i, gold_cluster in enumerate(gold_clusters):
             for j, cluster in enumerate(clusters):
                 scores[i, j] = MetricCoref.phi4(gold_cluster, cluster)
-        # print('pred:', [len(x) for x in clusters])
-        # print('gold:', [len(x) for x in gold_clusters])
         row, col = linear_sum_assignment(-scores)
         similarity = sum(scores[row, col])
         return similarity, len(clusters), similarity, len(gold_clusters)
@@ -353,7 +346,7 @@ class MetricCoref2:
             self.recall_numerator / float(self.recall_denominator)
         return 0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
 
-    def print(self, dataset_name, details=False):
+    def print(self, dataset_name):
         f1 = self.get_f1()
         if f1 > self.max_f1:
             self.max_f1 = f1
@@ -362,7 +355,7 @@ class MetricCoref2:
         logger.info('EVAL-COREF\tdataset: {}\tcurr-iter: {}\t{}-f1: {}\tmax-iter: {}\tmax-{}-f1: {}'
                     .format(dataset_name, self.iter, self.name, f1, self.max_iter, self.name, self.max_f1))
 
-    def log(self, tb_logger, dataset_name):
+    def log(self, tb_logger):
         tb_logger.log_value('metrics-coref/{}-f1'.format(self.name), self.get_f1(), self.iter)
 
     @staticmethod
@@ -424,7 +417,7 @@ class MetricCorefAverage:
         scores = [x.get_f1() for x in self.metrics]
         return sum(scores) / len(scores) if len(scores) > 0 else 0.0
 
-    def print(self, dataset_name, details=False):
+    def print(self, dataset_name):
         f1 = self.get_f1()
 
         if f1 > self.max_f1:
@@ -435,5 +428,5 @@ class MetricCorefAverage:
                     .format(dataset_name, self.task, self.iter, self.name, f1, self.max_iter, self.name, self.max_f1,
                             self.iter - self.max_iter))
 
-    def log(self, tb_logger, dataset_name):
+    def log(self, tb_logger):
         tb_logger.log_value('metrics-coref/{}-f1'.format(self.name), self.get_f1(), self.iter)

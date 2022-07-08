@@ -20,7 +20,7 @@ logger = logging.getLogger()
 
 
 class DatasetDWIESpanBertHoi(Dataset):
-    def __init__(self, name, config, dictionaries, linking_candidates=None):
+    def __init__(self, name, config, dictionaries):
         super().__init__()
         self.name = name
         self.tag = config['dataset']['tag']
@@ -67,13 +67,6 @@ class DatasetDWIESpanBertHoi(Dataset):
             if 'link' in concept:
                 gold.append((mention['subtoken_begin'], mention['subtoken_end'], concept['link']))
 
-            # (kzaporoj) - the next gold calculation is wrong because only adds correct link if it is present in candidate
-            # list. It doesn't account for the fact that the candidate list can be wrong. Coreflinker can take the link
-            # from other mentions in the same cluster, giving lower results when using this formulation
-            # while the output is actually correct.
-
-            # if 'link' in mention:
-            #     gold.append((mention['token_begin'], mention['token_end'], mention['link']))
         return gold
 
     def convert(self, data):

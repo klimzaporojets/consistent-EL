@@ -4,6 +4,10 @@ from typing import Optional
 import torch
 import torch.nn as nn
 
+from models.misc.text_field import TextFieldEmbedderTokens, TextFieldEmbedderCharacters
+from models.misc.transformers import WrapperBERT, WrapperSpanBERT, WrapperSpanBERTSubtoken, WrapperSpanBERT_X
+from models.utils.debug import Wrapper1
+
 
 class LayerNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-12):
@@ -210,15 +214,6 @@ def bucket_values(distances: torch.Tensor,
     return combined_index.clamp(0, num_total_buckets - 1)
 
 
-import torch
-import torch.nn as nn
-
-# from modules.seq2seq import seq2seq_create
-from models.misc.text_field import TextFieldEmbedderTokens, TextFieldEmbedderCharacters
-from models.misc.transformers import WrapperBERT, WrapperSpanBERT, WrapperSpanBERTSubtoken, WrapperSpanBERT_X
-from models.utils.debug import Wrapper1
-
-
 def create_activation_function(name):
     if name == 'relu':
         return nn.ReLU()
@@ -247,13 +242,13 @@ class TextEmbedder(nn.Module):
             self.word_embedder = TextFieldEmbedderTokens(dictionaries, config['text_field_embedder'])
             self.dim_output += self.word_embedder.dim
         if 'bert_embedder' in config:
-            self.bert_embedder = WrapperBERT(dictionaries, config['bert_embedder'])
+            self.bert_embedder = WrapperBERT(config['bert_embedder'])
             self.dim_output += self.bert_embedder.dim_output
         if 'spanbert_embedder' in config:
-            self.spanbert_embedder = WrapperSpanBERT(dictionaries, config['spanbert_embedder'])
+            self.spanbert_embedder = WrapperSpanBERT(config['spanbert_embedder'])
             self.dim_output += self.spanbert_embedder.dim_output
         if 'spanbert_embedder_subtoken' in config:
-            self.spanbert_embedder = WrapperSpanBERTSubtoken(dictionaries, config['spanbert_embedder_subtoken'])
+            self.spanbert_embedder = WrapperSpanBERTSubtoken( config['spanbert_embedder_subtoken'])
             self.dim_output += self.spanbert_embedder.dim_output
 
         if 'spanbert_embedder_x' in config:
@@ -380,7 +375,6 @@ class FeedForward(nn.Module):
 
     def create_default(self, config):
         if config['ln']:
-            # from modules.misc import LayerNorm
             self.layers.append(LayerNorm(self.dim_output))
         if config['dropout'] != 0.0:
             self.layers.append(nn.Dropout(config["dropout"]))
@@ -416,4 +410,3 @@ class FeedForward(nn.Module):
 
     def forward(self, tensor):
         return self.layers(tensor)
-

@@ -8,6 +8,7 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s
                     datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 logger = logging.getLogger()
 
+
 def get_sentence_map(segments, sentence_end):
     assert len(sentence_end) == sum([len(seg) - 2 for seg in segments])  # of subtokens in all segments
     sent_map = []
@@ -45,7 +46,6 @@ class BertDocument(object):
         self.segments = []
         self.segment_subtoken_map = []
         self.segment_info = []  # Only non-none for the first subtoken of each word
-
 
     def finalize(self):
         sentence_map = get_sentence_map(self.segments, self.sentence_end)
@@ -103,11 +103,9 @@ def get_segmented_doc_for_bert(text, seg_len, tokenizer):
 
     # Build up documents
     for word in text:
-        # row = line.split()  # Columns for each token
         if word == '.':
             segmented_doc_for_bert.sentence_end[-1] = True
         else:
-            # assert len(row) >= 12
             word_idx += 1
             word = normalize_word(word)
             subtokens = tokenizer.tokenize(word)

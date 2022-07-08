@@ -66,10 +66,8 @@ class EntityEmbbederKB(nn.Module):
         self.objs[nill_entity] = []
 
     def forward(self, candidates):
-        # print('candidates:', candidates.size())
         candidat2entity = {candidate_idx: self.entities.lookup(self.dictionary[candidate_idx]) for candidate_idx in
                            set(candidates.view(-1).tolist())}
-        # print("number of entities:", len(candidat2entity))
 
         mapping2 = {}
         p_data = []
@@ -96,6 +94,5 @@ class EntityEmbbederKB(nn.Module):
 
         outputs = torch.index_select(vecs, 0, inputs_x.view(-1))
         outputs = outputs.view(candidates.size() + (-1,))
-        # print('outputs:', outputs.size())
 
         return outputs

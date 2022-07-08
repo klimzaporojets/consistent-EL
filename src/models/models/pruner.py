@@ -52,7 +52,6 @@ class MentionPrunerSuper(nn.Module):
         pass
 
 
-# class MentionPrunerGold(nn.Module):
 class MentionPrunerGold(MentionPrunerSuper):
     def __init__(self, max_span_length, config):
         super(MentionPrunerGold, self).__init__()
@@ -351,18 +350,18 @@ class MentionPrunerSpanBert(MentionPrunerSuper):
 
     def end_epoch(self, dataset_name):
         logger.info('{}-span-generator: {} / {} = {}'.format(dataset_name, self.span_generated, self.span_recall_denom,
-                                                       self.span_generated / (self.span_recall_denom + 1e-7)))
+                                                             self.span_generated / (self.span_recall_denom + 1e-7)))
         logger.info('{}-span-recall: {} / {} = {}'.format(dataset_name, self.span_recall_numer, self.span_recall_denom,
-                                                    self.span_recall_numer / (self.span_recall_denom + 1e-7)))
+                                                          self.span_recall_numer / (self.span_recall_denom + 1e-7)))
         logger.info('{}-span-loss: {}'.format(dataset_name, self.span_loss))
         logger.info('{}-span-recall-enabled: {} / {} = {}'.format(dataset_name, self.span_recall_numer_enabled,
-                                                            self.span_recall_denom,
-                                                            self.span_recall_numer_enabled / (
-                                                                    self.span_recall_denom + 1e-7)))
+                                                                  self.span_recall_denom,
+                                                                  self.span_recall_numer_enabled / (
+                                                                          self.span_recall_denom + 1e-7)))
         logger.info('{}-span-precision-enabled: {} / {} = {}'.format(dataset_name, self.span_recall_numer_enabled,
-                                                               self.span_all_enabled,
-                                                               self.span_recall_numer_enabled / (
-                                                                       self.span_all_enabled + 1e-7)))
+                                                                     self.span_all_enabled,
+                                                                     self.span_recall_numer_enabled / (
+                                                                             self.span_all_enabled + 1e-7)))
         self.span_generated = 0
         self.span_recall_numer = 0
         self.span_recall_numer_enabled = 0
@@ -563,7 +562,7 @@ class MentionPrunerSpanBertHoi(MentionPrunerSuper):
         tb_logger.log_value('{}-pruner-min'.format(dataset_name), self.get_mean(self.scores_min), step_nr)
         tb_logger.log_value('{}-pruner-max'.format(dataset_name), self.get_mean(self.scores_max), step_nr)
 
-        self.end_epoch(dataset_name, predict, tb_logger, step_nr)
+        self.end_epoch(dataset_name, predict)
         if self.debug_stats:
             self.pruner_losses = list()
             self.scores_norm = list()
@@ -572,7 +571,7 @@ class MentionPrunerSpanBertHoi(MentionPrunerSuper):
             self.scores_min = list()
             self.scores_max = list()
 
-    def end_epoch(self, dataset_name, predict, tb_logger, step_nr):
+    def end_epoch(self, dataset_name, predict):
         if self.debug_stats or predict:
             logger.info('{}-span-generator: {} / {} = {}'.format(dataset_name, self.span_generated,
                                                                  self.span_recall_denom,
@@ -582,13 +581,13 @@ class MentionPrunerSpanBertHoi(MentionPrunerSuper):
                                                               self.span_recall_numer / (self.span_recall_denom + 1e-7)))
             logger.info('{}-span-loss: {}'.format(dataset_name, self.span_loss))
             logger.info('{}-span-recall-enabled: {} / {} = {}'.format(dataset_name, self.span_recall_numer_enabled,
-                                                                self.span_recall_denom,
-                                                                self.span_recall_numer_enabled / (
-                                                                        self.span_recall_denom + 1e-7)))
+                                                                      self.span_recall_denom,
+                                                                      self.span_recall_numer_enabled / (
+                                                                              self.span_recall_denom + 1e-7)))
             logger.info('{}-span-precision-enabled: {} / {} = {}'.format(dataset_name, self.span_recall_numer_enabled,
-                                                                   self.span_all_enabled,
-                                                                   self.span_recall_numer_enabled / (
-                                                                           self.span_all_enabled + 1e-7)))
+                                                                         self.span_all_enabled,
+                                                                         self.span_recall_numer_enabled / (
+                                                                                 self.span_all_enabled + 1e-7)))
         self.span_generated = 0
         self.span_recall_numer = 0
         self.span_recall_numer_enabled = 0

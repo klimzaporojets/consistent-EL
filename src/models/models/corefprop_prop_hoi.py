@@ -11,6 +11,7 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s
                     datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 logger = logging.getLogger()
 
+
 class ModuleCorefPropHoi(nn.Module):
 
     def __init__(self, dim_span, coref_pruner, config, span_pair_generator):
@@ -32,7 +33,8 @@ class ModuleCorefPropHoi(nn.Module):
 
             self.gate = MyGate(dim_span, init_weights_std=self.init_weights_std)
 
-    def forward(self, all_spans, filtered_spans, gold_spans, max_span_length=0, gold_spans_lengths=0):
+    # def forward(self, all_spans, filtered_spans, gold_spans, max_span_length=0, gold_spans_lengths=0):
+    def forward(self, all_spans, filtered_spans):
         update = filtered_spans['span_vecs']
         # update.shape --> [1, 21, 2324]
 
