@@ -216,7 +216,7 @@ __WORK IN PROGRESS__
 If you have questions, please e-mail us at <klim.zaporojets@ugent.be>.
 
 ## Acknowledgements
-Part of the research leading to DWIE dataset has received funding from 
+Part of the research has received funding from 
 (i) the European Union’s Horizon
 2020 research and innovation programme under grant agreement no. 761488 for 
 the [CPN project](https://www.projectcpn.eu/), and
