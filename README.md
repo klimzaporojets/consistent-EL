@@ -208,10 +208,6 @@ setup and dataset (e.g., obtained by by running ```./train_all.sh``` script)
 were saved. The reported metric is the average of the calculated metrics for 
 the predictions in each of the runs. 
 
-## Standalone Execution
-We also provide possibility to deploy REST API service. 
-__WORK IN PROGRESS__
-
 ## Contact
 If you have questions, please e-mail us at <klim.zaporojets@ugent.be>.
 
