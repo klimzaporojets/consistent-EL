@@ -79,7 +79,7 @@ class MetricSpanNER:
     def update(self, pred, gold):
         self.evaluator.update(pred, gold)
 
-    def update2(self, args):
+    def update2(self, args, metadata=None):
         self.update(args['pred'], args['gold'])
 
     def print(self, dataset_name):

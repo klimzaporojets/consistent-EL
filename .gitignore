@@ -8,3 +8,4 @@ experiments/**/output_train.log
 experiments/**/commit_info.json
 /results/
 deleteme_old_configs_experiments/
+synchronize.sh

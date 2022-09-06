@@ -402,7 +402,7 @@ class CorefLinkerLossDisabled(nn.Module):
     def create_metrics(self):
         return []
 
-    def log_stats(self, dataset_name, predict, tb_logger, step_nr):
+    def log_stats(self, dataset_name, tb_logger, step_nr):
         pass
 
 

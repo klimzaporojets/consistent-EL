@@ -22,7 +22,7 @@ class MetricObjective:
     # def update(self, logits, targets, args, metadata={}):
     #     self.total += args['obj']
 
-    def update2(self, args):
+    def update2(self, args, metadata=None):
         self.total += args['loss']
 
     def print(self, dataset_name):

@@ -255,7 +255,7 @@ class CorefLinkerLossHoi(nn.Module):
         # kzaporoj - None for the link part , not yet
         return output['loss'], output_linking, output_coref
 
-    def log_stats(self, dataset_name, predict, tb_logger, step_nr):
+    def log_stats(self, dataset_name, tb_logger, step_nr):
         pass  # for now nothing here
 
     def create_metrics(self):

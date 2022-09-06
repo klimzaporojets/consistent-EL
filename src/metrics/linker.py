@@ -38,7 +38,7 @@ class MetricLinkerImproved:
         self.fp = 0
         self.fn = 0
 
-    def update2(self, args):
+    def update2(self, args, metadata=None):
         for pred, gold in zip(args['pred'], args['gold']):
             if pred is None and gold is None:
                 continue
@@ -96,7 +96,7 @@ class MetricLinkAccuracy:
         self.numer = 0
         self.denom = 0
 
-    def update2(self, args):
+    def update2(self, args, metadata=None):
         for pred, gold in zip(args['scores'], args['gold']):
             if pred is None and (gold is None or len(gold) == 0):
                 continue
@@ -153,7 +153,7 @@ class MetricLinkAccuracyNoCandidates:
         self.numer = 0
         self.denom = 0
 
-    def update2(self, args):
+    def update2(self, args, metadata=None):
         for pred, gold in zip(args['pred'], args['gold']):
             if pred is None and (gold is None or len(gold) == 0):
                 continue

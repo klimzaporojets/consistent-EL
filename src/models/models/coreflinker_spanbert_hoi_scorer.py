@@ -303,7 +303,7 @@ class CoreflinkerSpanBertHoi(nn.Module):
 
     def log_stats(self, dataset_name, tb_logger, step_nr):
         self.span_pruner.log_stats(dataset_name, not self.training, tb_logger, step_nr)
-        self.coref_linker_task.log_stats(dataset_name, tb_logger, tb_logger, step_nr)
+        self.coref_linker_task.log_stats(dataset_name, tb_logger, step_nr)
         self.coref_linker_scorer.log_stats(dataset_name, not self.training, tb_logger, step_nr)
 
     def get_params(self, named=False):
@@ -544,7 +544,7 @@ class CoreflinkerSpanBertHoi(nn.Module):
 
         for m in metrics:
             if m.task in output:
-                m.update2(output[m.task])
+                m.update2(output[m.task], metadata)
 
         if self.debug_memory:
             logger.debug('(loss)  %s' % (torch.cuda.memory_allocated(0) / 1024 / 1024))
