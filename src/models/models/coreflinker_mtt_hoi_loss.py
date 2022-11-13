@@ -336,8 +336,8 @@ class LossCorefLinkerMTTHoi(nn.Module):
         Unlike create_coreflinker_mtt_target_mask that produces only a single entry (1.0 mask activation) from root
         to a span (the first span in a cluster) in a particular NIL cluster, this one returns multiple matrices with
         activations for each of the spans ("heads") in a NIL cluster.
-        For details: see slide https://docs.google.com/presentation/d/1Za2gCNq55gp1MCTlg4p0CN-JGyKjj4WtzxpYJKDZz3E/edit#slide=id.gbea2b70095_0_61
-        For details of what create_coreflinker_mtt_target_mask is doing see slide https://docs.google.com/presentation/d/1Za2gCNq55gp1MCTlg4p0CN-JGyKjj4WtzxpYJKDZz3E/edit#slide=id.gbea2b70095_0_0
+        For details: see https://docs.google.com/presentation/d/12vVEcWkg-BygOM_ui1l0jaE_JJ0RDYwW7wFBqPGgkvY/edit#slide=id.g18c18415074_0_0
+        For details of what create_coreflinker_mtt_target_mask is doing see slide https://docs.google.com/presentation/d/12vVEcWkg-BygOM_ui1l0jaE_JJ0RDYwW7wFBqPGgkvY/edit#slide=id.g18c18415074_0_143
 
         :param pred_spans:
         :param gold_spans:
@@ -458,7 +458,7 @@ class LossCorefLinkerMTTHoi(nn.Module):
         """
         This version is the extension of create_coreflinker_mtt_target_mask_multihead with some formulations in the
         comments of the following slide:
-        https://docs.google.com/presentation/d/1Za2gCNq55gp1MCTlg4p0CN-JGyKjj4WtzxpYJKDZz3E/edit#slide=id.gd02f9cc825_0_419
+        https://docs.google.com/presentation/d/12vVEcWkg-BygOM_ui1l0jaE_JJ0RDYwW7wFBqPGgkvY/edit#slide=id.g18c18415074_0_78
         The idea is to use the output of this function to calculate the product of tree weights of all nil clusters:
         target score = ( MTT(mask_linked*score) * (mask_nil_cluster1_head1*score + mask_nil_cluster1_head2*score...) *
             * (mask_nil_cluster2_head1*score + mask_nil_cluster2_head2*score....) * ....)

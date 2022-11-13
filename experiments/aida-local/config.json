@@ -121,7 +121,7 @@
       "smart_arsinh": false,
       "pred_arsinh": true,
       "multihead_nil": "multihead_prod",
-      "_multihead_nil": "If 'none' just does a single connection from root for each of the NIL spans. If 'first', only connects the first span. If 'multihead_prod' does the multihead using products as explained in https://docs.google.com/presentation/d/1Za2gCNq55gp1MCTlg4p0CN-JGyKjj4WtzxpYJKDZz3E/edit#slide=id.gd02f9cc825_0_419. If 'multihead_old' does the old multihead subtracting matrices, but I think is wrong.",
+      "_multihead_nil": "If 'none' just does a single connection from root for each of the NIL spans. If 'first', only connects the first span. If 'multihead_prod' does the multihead using products as explained in https://docs.google.com/presentation/d/12vVEcWkg-BygOM_ui1l0jaE_JJ0RDYwW7wFBqPGgkvY/edit#slide=id.g18c18415074_0_78. If 'multihead_old' does the old multihead subtracting matrices, but I think is wrong.",
       "log_inf_mask": true,
       "exp_trick": true,
       "zeros_to_clusters": false,
